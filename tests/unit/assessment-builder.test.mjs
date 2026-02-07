@@ -1,0 +1,236 @@
+import { AssessmentBuilder } from '../../src/task/AssessmentBuilder.mjs'
+
+import { TEST_ENDPOINT } from '../helpers/config.mjs'
+
+
+describe( 'AssessmentBuilder', () => {
+
+    describe( 'build', () => {
+
+        test( 'builds assessment with all layers populated', () => {
+            const layer1Result = {
+                status: true,
+                messages: [],
+                categories: {
+                    isReachable: true,
+                    supportsMcp: true,
+                    hasTools: true,
+                    hasResources: false,
+                    hasPrompts: false,
+                    supportsX402: true,
+                    hasValidPaymentRequirements: true,
+                    supportsExactScheme: true,
+                    supportsEvm: true,
+                    supportsSolana: false,
+                    supportsTasks: false,
+                    supportsMcpApps: false
+                },
+                entries: {
+                    endpoint: TEST_ENDPOINT,
+                    serverName: 'TestServer',
+                    serverVersion: '1.0.0',
+                    serverDescription: 'A test server',
+                    protocolVersion: '2025-03-26',
+                    capabilities: { tools: {} },
+                    instructions: null,
+                    tools: [ { name: 'tool1', description: 'desc' } ],
+                    resources: [],
+                    prompts: [],
+                    x402: {
+                        version: 2,
+                        restrictedCalls: [ 'tool1' ],
+                        paymentOptions: [],
+                        networks: [ 'BASE_MAINNET' ],
+                        schemes: [ 'exact' ],
+                        perTool: {}
+                    },
+                    latency: { ping: 120, listTools: 250 },
+                    timestamp: '2026-01-01T00:00:00.000Z'
+                }
+            }
+
+            const layer2Result = {
+                status: true,
+                messages: [],
+                categories: {
+                    isReachable: true,
+                    hasAgentCard: true,
+                    hasValidStructure: true,
+                    hasSkills: true,
+                    supportsStreaming: false,
+                    supportsPushNotifications: false,
+                    supportsExtendedCard: false
+                },
+                entries: {
+                    url: 'https://mcp.example.com',
+                    agentName: 'TestAgent',
+                    agentDescription: 'A test agent',
+                    agentVersion: '1.0.0',
+                    providerOrganization: 'TestOrg',
+                    providerUrl: 'https://test.org',
+                    skillCount: 2,
+                    skills: [ { id: 's1', name: 'Skill1' } ],
+                    protocolBindings: [ 'jsonrpc' ],
+                    protocolVersion: '1.0',
+                    timestamp: '2026-01-01T00:00:00.000Z'
+                }
+            }
+
+            const layer3Result = {
+                found: true,
+                registrations: [ { agentId: '42', agentRegistry: '0x8004...', chainId: 8453 } ],
+                verification: {
+                    result: {
+                        agentId: '42',
+                        agentRegistry: '0x8004...',
+                        chainId: 8453,
+                        chainAlias: 'BASE_MAINNET',
+                        registrationName: 'TestAgent',
+                        registrationDescription: 'A test agent',
+                        isOnChainVerified: true,
+                        isSpecCompliant: true,
+                        x402Support: true,
+                        isActive: true,
+                        services: null,
+                        supportedTrust: null
+                    },
+                    rpcNode: 'https://base-mainnet.g.alchemy.com/v2/xxx'
+                },
+                messages: []
+            }
+
+            const layer4Result = {
+                result: {
+                    feedbackCount: 5,
+                    averageValue: 450,
+                    valueDecimals: 2,
+                    validationCount: 3,
+                    averageResponse: null
+                },
+                messages: []
+            }
+
+            const classifiedMessages = [
+                { code: 'PRB-005', severity: 'INFO', layer: 1, location: null, message: 'PRB-005: No tools to probe' }
+            ]
+
+            const { status, categories, entries } = AssessmentBuilder.build( {
+                endpoint: TEST_ENDPOINT,
+                classifiedMessages,
+                layer1Result,
+                layer2Result,
+                layer3Result,
+                layer4Result
+            } )
+
+            expect( status ).toBe( true )
+
+            expect( categories[ 'isReachable' ] ).toBe( true )
+            expect( categories[ 'supportsMcp' ] ).toBe( true )
+            expect( categories[ 'supportsX402' ] ).toBe( true )
+            expect( categories[ 'hasA2aCard' ] ).toBe( true )
+            expect( categories[ 'hasA2aValidStructure' ] ).toBe( true )
+            expect( categories[ 'hasWellKnownRegistration' ] ).toBe( true )
+            expect( categories[ 'hasErc8004Registration' ] ).toBe( true )
+            expect( categories[ 'isErc8004OnChainVerified' ] ).toBe( true )
+            expect( categories[ 'isErc8004SpecCompliant' ] ).toBe( true )
+            expect( categories[ 'hasOnChainReputation' ] ).toBe( true )
+            expect( categories[ 'overallHealthy' ] ).toBe( true )
+
+            expect( entries[ 'endpoint' ] ).toBe( TEST_ENDPOINT )
+            expect( entries[ 'mcp' ][ 'serverName' ] ).toBe( 'TestServer' )
+            expect( entries[ 'mcp' ][ 'toolCount' ] ).toBe( 1 )
+            expect( entries[ 'a2a' ][ 'agentName' ] ).toBe( 'TestAgent' )
+            expect( entries[ 'erc8004' ][ 'agentId' ] ).toBe( '42' )
+            expect( entries[ 'reputation' ][ 'feedbackCount' ] ).toBe( 5 )
+            expect( entries[ 'assessment' ][ 'grade' ] ).toBe( 'A' )
+            expect( entries[ 'assessment' ][ 'infoCount' ] ).toBe( 1 )
+        } )
+
+
+        test( 'sets status false when ERROR messages present', () => {
+            const classifiedMessages = [
+                { code: 'CON-001', severity: 'ERROR', layer: 1, location: 'endpoint', message: 'CON-001 endpoint: Not reachable' }
+            ]
+
+            const { status, categories, entries } = AssessmentBuilder.build( {
+                endpoint: TEST_ENDPOINT,
+                classifiedMessages,
+                layer1Result: { status: false, messages: [], categories: {}, entries: {} },
+                layer2Result: null,
+                layer3Result: null,
+                layer4Result: null
+            } )
+
+            expect( status ).toBe( false )
+            expect( categories[ 'overallHealthy' ] ).toBe( false )
+            expect( entries[ 'assessment' ][ 'grade' ] ).toBe( 'C' )
+            expect( entries[ 'assessment' ][ 'errorCount' ] ).toBe( 1 )
+        } )
+
+
+        test( 'assigns grade B with warnings but no errors', () => {
+            const classifiedMessages = [
+                { code: 'PAY-083', severity: 'WARNING', layer: 1, location: 'payTo', message: 'PAY-083 payTo: Not checksummed' },
+                { code: 'CSV-020', severity: 'WARNING', layer: 2, location: null, message: 'CSV-020: Missing field' }
+            ]
+
+            const { status, entries } = AssessmentBuilder.build( {
+                endpoint: TEST_ENDPOINT,
+                classifiedMessages,
+                layer1Result: { status: true, messages: [], categories: { isReachable: true }, entries: {} },
+                layer2Result: null,
+                layer3Result: null,
+                layer4Result: null
+            } )
+
+            expect( status ).toBe( true )
+            expect( entries[ 'assessment' ][ 'grade' ] ).toBe( 'B' )
+            expect( entries[ 'assessment' ][ 'warningCount' ] ).toBe( 2 )
+        } )
+
+
+        test( 'returns null for a2a when no agent card data', () => {
+            const { entries } = AssessmentBuilder.build( {
+                endpoint: TEST_ENDPOINT,
+                classifiedMessages: [],
+                layer1Result: { status: true, messages: [], categories: {}, entries: {} },
+                layer2Result: null,
+                layer3Result: null,
+                layer4Result: null
+            } )
+
+            expect( entries[ 'a2a' ] ).toBe( null )
+        } )
+
+
+        test( 'returns null for erc8004 when no config provided', () => {
+            const { entries } = AssessmentBuilder.build( {
+                endpoint: TEST_ENDPOINT,
+                classifiedMessages: [],
+                layer1Result: { status: true, messages: [], categories: {}, entries: {} },
+                layer2Result: null,
+                layer3Result: null,
+                layer4Result: null
+            } )
+
+            expect( entries[ 'erc8004' ] ).toBe( null )
+        } )
+
+
+        test( 'returns null for reputation when no data', () => {
+            const { entries } = AssessmentBuilder.build( {
+                endpoint: TEST_ENDPOINT,
+                classifiedMessages: [],
+                layer1Result: { status: true, messages: [], categories: {}, entries: {} },
+                layer2Result: null,
+                layer3Result: null,
+                layer4Result: null
+            } )
+
+            expect( entries[ 'reputation' ] ).toBe( null )
+        } )
+
+    } )
+
+} )

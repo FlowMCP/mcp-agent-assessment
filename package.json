@@ -1,0 +1,30 @@
+{
+    "name": "mcp-agent-assessment",
+    "version": "0.1.0",
+    "description": "Unified MCP Agent Assessment: orchestrates MCP validation, A2A agent card checks, ERC-8004 on-chain verification, and reputation queries into a single structured assessment with severity classification and compare support.",
+    "main": "./src/index.mjs",
+    "type": "module",
+    "scripts": {
+        "test": "NODE_OPTIONS='--experimental-vm-modules' npx jest --detectOpenHandles",
+        "test:coverage:src": "NODE_OPTIONS='--experimental-vm-modules' npx jest --detectOpenHandles --coverage --collectCoverageFrom='src/**/*.mjs'",
+        "test:file": "NODE_OPTIONS='--experimental-vm-modules' npx jest --detectOpenHandles"
+    },
+    "keywords": [
+        "mcp",
+        "assessment",
+        "validator",
+        "x402",
+        "a2a",
+        "erc-8004",
+        "reputation"
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "x402-mcp-validator": "github:FlowMCP/x402-mcp-validator#main",
+        "a2a-agent-validator": "github:FlowMCP/a2a-agent-validator#main",
+        "erc8004-registry-parser": "github:FlowMCP/erc8004-registry-parser#main"
+    },
+    "devDependencies": {
+        "jest": "^30.0.5"
+    }
+}

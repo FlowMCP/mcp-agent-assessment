@@ -1,0 +1,260 @@
+class AssessmentBuilder {
+
+
+    static build( { endpoint, classifiedMessages, layer1Result, layer2Result, layer3Result, layer4Result } ) {
+        const { categories } = AssessmentBuilder.#buildCategories( {
+            layer1Result,
+            layer2Result,
+            layer3Result,
+            layer4Result,
+            classifiedMessages
+        } )
+
+        const { entries } = AssessmentBuilder.#buildEntries( {
+            endpoint,
+            layer1Result,
+            layer2Result,
+            layer3Result,
+            layer4Result,
+            classifiedMessages
+        } )
+
+        const status = !classifiedMessages.some( ( msg ) => {
+            const isError = msg[ 'severity' ] === 'ERROR'
+
+            return isError
+        } )
+
+        return { status, categories, entries }
+    }
+
+
+    static #buildCategories( { layer1Result, layer2Result, layer3Result, layer4Result, classifiedMessages } ) {
+        const layer1Categories = ( layer1Result && layer1Result[ 'categories' ] ) || {}
+        const layer2Categories = ( layer2Result && layer2Result[ 'categories' ] ) || {}
+
+        const categories = {
+            isReachable: layer1Categories[ 'isReachable' ] || false,
+            supportsMcp: layer1Categories[ 'supportsMcp' ] || false,
+            hasTools: layer1Categories[ 'hasTools' ] || false,
+            hasResources: layer1Categories[ 'hasResources' ] || false,
+            hasPrompts: layer1Categories[ 'hasPrompts' ] || false,
+            supportsX402: layer1Categories[ 'supportsX402' ] || false,
+            hasValidPaymentRequirements: layer1Categories[ 'hasValidPaymentRequirements' ] || false,
+            supportsExactScheme: layer1Categories[ 'supportsExactScheme' ] || false,
+            supportsEvm: layer1Categories[ 'supportsEvm' ] || false,
+            supportsSolana: layer1Categories[ 'supportsSolana' ] || false,
+            supportsTasks: layer1Categories[ 'supportsTasks' ] || false,
+            supportsMcpApps: layer1Categories[ 'supportsMcpApps' ] || false,
+
+            hasA2aCard: layer2Categories[ 'isReachable' ] || false,
+            hasA2aValidStructure: layer2Categories[ 'hasValidStructure' ] || false,
+            hasA2aSkills: layer2Categories[ 'hasSkills' ] || false,
+            supportsA2aStreaming: layer2Categories[ 'supportsStreaming' ] || false,
+
+            hasWellKnownRegistration: false,
+            hasErc8004Registration: false,
+            isErc8004OnChainVerified: false,
+            isErc8004SpecCompliant: false,
+
+            hasOnChainReputation: false,
+
+            overallHealthy: false
+        }
+
+        if( layer3Result ) {
+            categories[ 'hasWellKnownRegistration' ] = layer3Result[ 'found' ] || false
+
+            if( layer3Result[ 'verification' ] ) {
+                const { result: verResult } = layer3Result[ 'verification' ]
+
+                if( verResult ) {
+                    categories[ 'hasErc8004Registration' ] = (
+                        verResult[ 'agentId' ] !== null &&
+                        verResult[ 'agentRegistry' ] !== null
+                    )
+                    categories[ 'isErc8004OnChainVerified' ] = verResult[ 'isOnChainVerified' ] || false
+                    categories[ 'isErc8004SpecCompliant' ] = verResult[ 'isSpecCompliant' ] || false
+                }
+            }
+        }
+
+        if( layer4Result && layer4Result[ 'result' ] ) {
+            const { feedbackCount, validationCount } = layer4Result[ 'result' ]
+            const hasFeedback = feedbackCount !== null && feedbackCount > 0
+            const hasValidation = validationCount !== null && validationCount > 0
+
+            categories[ 'hasOnChainReputation' ] = hasFeedback || hasValidation
+        }
+
+        const hasErrors = classifiedMessages.some( ( msg ) => {
+            const isError = msg[ 'severity' ] === 'ERROR'
+
+            return isError
+        } )
+
+        categories[ 'overallHealthy' ] = !hasErrors
+
+        return { categories }
+    }
+
+
+    static #buildEntries( { endpoint, layer1Result, layer2Result, layer3Result, layer4Result, classifiedMessages } ) {
+        const layer1Entries = ( layer1Result && layer1Result[ 'entries' ] ) || {}
+        const layer2Entries = ( layer2Result && layer2Result[ 'entries' ] ) || {}
+
+        const { errorCount, warningCount, infoCount } = AssessmentBuilder.#countSeverities( { classifiedMessages } )
+        const { grade } = AssessmentBuilder.#computeGrade( { errorCount, warningCount } )
+
+        const entries = {
+            endpoint,
+            timestamp: new Date().toISOString(),
+
+            mcp: {
+                serverName: layer1Entries[ 'serverName' ] || null,
+                serverVersion: layer1Entries[ 'serverVersion' ] || null,
+                serverDescription: layer1Entries[ 'serverDescription' ] || null,
+                protocolVersion: layer1Entries[ 'protocolVersion' ] || null,
+                capabilities: layer1Entries[ 'capabilities' ] || null,
+                instructions: layer1Entries[ 'instructions' ] || null,
+                toolCount: Array.isArray( layer1Entries[ 'tools' ] ) ? layer1Entries[ 'tools' ].length : null,
+                resourceCount: Array.isArray( layer1Entries[ 'resources' ] ) ? layer1Entries[ 'resources' ].length : null,
+                promptCount: Array.isArray( layer1Entries[ 'prompts' ] ) ? layer1Entries[ 'prompts' ].length : null,
+                tools: layer1Entries[ 'tools' ] || null,
+                resources: layer1Entries[ 'resources' ] || null,
+                prompts: layer1Entries[ 'prompts' ] || null,
+                x402: layer1Entries[ 'x402' ] || null,
+                latency: layer1Entries[ 'latency' ] || null
+            },
+
+            a2a: AssessmentBuilder.#buildA2aEntries( { layer2Entries } ),
+
+            erc8004: AssessmentBuilder.#buildErc8004Entries( { layer3Result } ),
+
+            reputation: AssessmentBuilder.#buildReputationEntries( { layer4Result } ),
+
+            assessment: {
+                errorCount,
+                warningCount,
+                infoCount,
+                grade
+            }
+        }
+
+        return { entries }
+    }
+
+
+    static #buildA2aEntries( { layer2Entries } ) {
+        if( !layer2Entries || !layer2Entries[ 'agentName' ] ) {
+            return null
+        }
+
+        const a2a = {
+            agentName: layer2Entries[ 'agentName' ] || null,
+            agentDescription: layer2Entries[ 'agentDescription' ] || null,
+            agentVersion: layer2Entries[ 'agentVersion' ] || null,
+            skillCount: layer2Entries[ 'skillCount' ] || null,
+            skills: layer2Entries[ 'skills' ] || null,
+            protocolBindings: layer2Entries[ 'protocolBindings' ] || null,
+            protocolVersion: layer2Entries[ 'protocolVersion' ] || null,
+            provider: {
+                organization: layer2Entries[ 'providerOrganization' ] || null,
+                url: layer2Entries[ 'providerUrl' ] || null
+            }
+        }
+
+        return a2a
+    }
+
+
+    static #buildErc8004Entries( { layer3Result } ) {
+        if( !layer3Result || !layer3Result[ 'verification' ] ) {
+            return null
+        }
+
+        const { result: verResult } = layer3Result[ 'verification' ]
+
+        if( !verResult || verResult[ 'agentId' ] === null ) {
+            return null
+        }
+
+        const erc8004 = {
+            agentId: verResult[ 'agentId' ],
+            agentRegistry: verResult[ 'agentRegistry' ],
+            chainId: verResult[ 'chainId' ],
+            chainAlias: verResult[ 'chainAlias' ],
+            registrationName: verResult[ 'registrationName' ],
+            registrationDescription: verResult[ 'registrationDescription' ],
+            isOnChainVerified: verResult[ 'isOnChainVerified' ],
+            isSpecCompliant: verResult[ 'isSpecCompliant' ],
+            x402Support: verResult[ 'x402Support' ],
+            isActive: verResult[ 'isActive' ],
+            services: verResult[ 'services' ],
+            supportedTrust: verResult[ 'supportedTrust' ]
+        }
+
+        return erc8004
+    }
+
+
+    static #buildReputationEntries( { layer4Result } ) {
+        if( !layer4Result || !layer4Result[ 'result' ] ) {
+            return null
+        }
+
+        const { feedbackCount, averageValue, valueDecimals, validationCount, averageResponse } = layer4Result[ 'result' ]
+
+        if( feedbackCount === null && validationCount === null ) {
+            return null
+        }
+
+        const reputation = {
+            feedbackCount,
+            averageValue,
+            valueDecimals,
+            validationCount,
+            averageResponse
+        }
+
+        return reputation
+    }
+
+
+    static #countSeverities( { classifiedMessages } ) {
+        let errorCount = 0
+        let warningCount = 0
+        let infoCount = 0
+
+        classifiedMessages
+            .forEach( ( msg ) => {
+                if( msg[ 'severity' ] === 'ERROR' ) { errorCount++ }
+                else if( msg[ 'severity' ] === 'WARNING' ) { warningCount++ }
+                else if( msg[ 'severity' ] === 'INFO' ) { infoCount++ }
+            } )
+
+        return { errorCount, warningCount, infoCount }
+    }
+
+
+    static #computeGrade( { errorCount, warningCount } ) {
+        if( errorCount > 0 ) {
+            const grade = 'C'
+
+            return { grade }
+        }
+
+        if( warningCount > 0 ) {
+            const grade = 'B'
+
+            return { grade }
+        }
+
+        const grade = 'A'
+
+        return { grade }
+    }
+}
+
+
+export { AssessmentBuilder }
