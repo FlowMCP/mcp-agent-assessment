@@ -49,6 +49,28 @@ describe( 'SeverityClassifier', () => {
         } )
 
 
+        test( 'classifies Layer 1 AUTH codes as INFO', () => {
+            const messages = [
+                'AUTH-002 oauth: Authorization Server Metadata not found',
+                'AUTH-003 oauth: PKCE S256 not supported',
+                'AUTH-010 oauth: Server requires authentication',
+                'AUTH-011 oauth: Scopes found — mcp:tools'
+            ]
+
+            const { classified } = SeverityClassifier.classify( { messages, layer: 1 } )
+
+            expect( classified ).toHaveLength( 4 )
+
+            classified
+                .forEach( ( msg ) => {
+                    expect( msg[ 'severity' ] ).toBe( 'INFO' )
+                } )
+
+            expect( classified[ 0 ][ 'code' ] ).toBe( 'AUTH-002' )
+            expect( classified[ 2 ][ 'code' ] ).toBe( 'AUTH-010' )
+        } )
+
+
         test( 'classifies Layer 2 A2A codes as milder severity', () => {
             const messages = [
                 'CON-010: Agent card not reachable',
@@ -87,6 +109,21 @@ describe( 'SeverityClassifier', () => {
 
             expect( classified[ 0 ][ 'severity' ] ).toBe( 'ERROR' )
             expect( classified[ 1 ][ 'severity' ] ).toBe( 'INFO' )
+        } )
+
+
+        test( 'classifies Layer 5 UI codes correctly', () => {
+            const messages = [
+                'CON-001 endpoint: Server not reachable',
+                'UIV-020 ui://dashboard: No CSP configuration declared',
+                'UIV-070 ui://dashboard: No graceful degradation'
+            ]
+
+            const { classified } = SeverityClassifier.classify( { messages, layer: 5 } )
+
+            expect( classified[ 0 ][ 'severity' ] ).toBe( 'ERROR' )
+            expect( classified[ 1 ][ 'severity' ] ).toBe( 'WARNING' )
+            expect( classified[ 2 ][ 'severity' ] ).toBe( 'INFO' )
         } )
 
 
@@ -152,14 +189,16 @@ describe( 'SeverityClassifier', () => {
                 layer1Messages: [ 'CON-001 endpoint: Server not reachable' ],
                 layer2Messages: [ 'CSV-020: Missing field' ],
                 layer3Messages: [ 'REG-001 well-known: Not found' ],
-                layer4Messages: [ 'REP-001: No data' ]
+                layer4Messages: [ 'REP-001: No data' ],
+                layer5Messages: [ 'UIV-020 ui://dashboard: No CSP' ]
             } )
 
-            expect( classified ).toHaveLength( 4 )
+            expect( classified ).toHaveLength( 5 )
             expect( classified[ 0 ][ 'layer' ] ).toBe( 1 )
             expect( classified[ 1 ][ 'layer' ] ).toBe( 2 )
             expect( classified[ 2 ][ 'layer' ] ).toBe( 3 )
             expect( classified[ 3 ][ 'layer' ] ).toBe( 4 )
+            expect( classified[ 4 ][ 'layer' ] ).toBe( 5 )
         } )
 
 
@@ -168,7 +207,8 @@ describe( 'SeverityClassifier', () => {
                 layer1Messages: [ 'CON-001 endpoint: Not reachable' ],
                 layer2Messages: null,
                 layer3Messages: undefined,
-                layer4Messages: []
+                layer4Messages: [],
+                layer5Messages: null
             } )
 
             expect( classified ).toHaveLength( 1 )
@@ -181,7 +221,8 @@ describe( 'SeverityClassifier', () => {
                 layer1Messages: [],
                 layer2Messages: [],
                 layer3Messages: [],
-                layer4Messages: []
+                layer4Messages: [],
+                layer5Messages: []
             } )
 
             expect( classified ).toHaveLength( 0 )

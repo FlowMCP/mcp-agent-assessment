@@ -5,6 +5,7 @@ import { TEST_ENDPOINT } from '../../helpers/config.mjs'
 
 const mockMcpCompare = jest.fn()
 const mockA2aCompare = jest.fn()
+const mockUiCompare = jest.fn()
 
 jest.unstable_mockModule( 'x402-mcp-validator', () => ( {
     McpServerValidator: {
@@ -17,6 +18,13 @@ jest.unstable_mockModule( 'a2a-agent-validator', () => ( {
     A2aAgentValidator: {
         start: jest.fn(),
         compare: mockA2aCompare
+    }
+} ) )
+
+jest.unstable_mockModule( 'mcp-apps-validator', () => ( {
+    McpAppsValidator: {
+        start: jest.fn(),
+        compare: mockUiCompare
     }
 } ) )
 
@@ -53,6 +61,42 @@ const EMPTY_A2A_DIFF = {
     categories: { changed: {} }
 }
 
+const EMPTY_UI_DIFF = {
+    server: { changed: {} },
+    uiResources: { added: [], removed: [], modified: [] },
+    uiLinkedTools: { added: [], removed: [], modified: [] },
+    csp: { changed: {} },
+    permissions: { added: [], removed: [] },
+    latency: { changed: {} },
+    categories: { changed: {} }
+}
+
+const MOCK_UI_LAYER = {
+    status: true,
+    messages: [],
+    categories: {
+        isReachable: true,
+        supportsMcp: true,
+        supportsMcpApps: true,
+        hasUiResources: true,
+        hasUiToolLinkage: true,
+        hasValidUiHtml: true,
+        hasValidCsp: true,
+        supportsTheming: false,
+        supportsDisplayModes: false,
+        hasToolVisibility: true,
+        hasValidPermissions: true,
+        hasGracefulDegradation: false
+    },
+    entries: {
+        endpoint: TEST_ENDPOINT,
+        extensionVersion: '2026-01-26',
+        uiResourceCount: 1,
+        uiResources: [ { uri: 'ui://dashboard', name: 'Dashboard', mimeType: 'text/html;profile=mcp-app', hasCsp: true, hasPermissions: true, displayModes: [] } ],
+        timestamp: '2026-01-01T00:00:00.000Z'
+    }
+}
+
 
 const makeAssessment = ( { overrides = {} } = {} ) => {
     const base = {
@@ -75,6 +119,12 @@ const makeAssessment = ( { overrides = {} } = {} ) => {
             hasA2aValidStructure: true,
             hasA2aSkills: true,
             supportsA2aStreaming: false,
+            uiSupportsMcpApps: true,
+            uiHasUiResources: true,
+            uiHasToolLinkage: true,
+            uiHasValidHtml: true,
+            uiHasValidCsp: true,
+            uiSupportsTheming: false,
             hasWellKnownRegistration: false,
             hasErc8004Registration: false,
             isErc8004OnChainVerified: false,
@@ -87,6 +137,7 @@ const makeAssessment = ( { overrides = {} } = {} ) => {
             timestamp: '2026-01-01T00:00:00.000Z',
             mcp: { serverName: 'TestServer', toolCount: 1 },
             a2a: { agentName: 'TestAgent' },
+            ui: { extensionVersion: '2026-01-26', uiResourceCount: 1 },
             erc8004: null,
             reputation: null,
             assessment: { errorCount: 0, warningCount: 0, infoCount: 0, grade: 'A' }
@@ -94,6 +145,7 @@ const makeAssessment = ( { overrides = {} } = {} ) => {
         layers: {
             mcp: MOCK_MCP_LAYER,
             a2a: MOCK_A2A_LAYER,
+            ui: MOCK_UI_LAYER,
             erc8004: null,
             reputation: null
         }
@@ -112,6 +164,8 @@ describe( 'McpAgentAssessment.compare', () => {
         McpAgentAssessment = mod.McpAgentAssessment
         mockMcpCompare.mockReset()
         mockA2aCompare.mockReset()
+        mockUiCompare.mockReset()
+        mockUiCompare.mockReturnValue( { status: true, messages: [], hasChanges: false, diff: EMPTY_UI_DIFF } )
     } )
 
 
@@ -169,6 +223,7 @@ describe( 'McpAgentAssessment.compare', () => {
         expect( result[ 'hasChanges' ] ).toBe( false )
         expect( result[ 'diff' ][ 'mcp' ] ).toEqual( EMPTY_MCP_DIFF )
         expect( result[ 'diff' ][ 'a2a' ] ).toEqual( EMPTY_A2A_DIFF )
+        expect( result[ 'diff' ][ 'ui' ] ).toEqual( EMPTY_UI_DIFF )
     } )
 
 
@@ -304,6 +359,48 @@ describe( 'McpAgentAssessment.compare', () => {
         } )
 
         expect( hasIntegrity ).toBe( true )
+    } )
+
+
+    test( 'detects UI changes via Layer 5 compare', () => {
+        const before = makeAssessment()
+        const after = makeAssessment()
+
+        const uiDiffWithChanges = {
+            ...EMPTY_UI_DIFF,
+            uiResources: { added: [ 'ui://new-resource' ], removed: [], modified: [] }
+        }
+
+        mockMcpCompare.mockReturnValue( { status: true, messages: [], hasChanges: false, diff: EMPTY_MCP_DIFF } )
+        mockA2aCompare.mockReturnValue( { status: true, messages: [], hasChanges: false, diff: EMPTY_A2A_DIFF } )
+        mockUiCompare.mockReturnValue( { status: true, messages: [], hasChanges: true, diff: uiDiffWithChanges } )
+
+        const result = McpAgentAssessment.compare( { before, after } )
+
+        expect( result[ 'hasChanges' ] ).toBe( true )
+        expect( result[ 'diff' ][ 'ui' ][ 'uiResources' ][ 'added' ] ).toContain( 'ui://new-resource' )
+    } )
+
+
+    test( 'returns null ui diff when no UI layers present', () => {
+        const before = makeAssessment( {
+            overrides: {
+                layers: { mcp: MOCK_MCP_LAYER, a2a: MOCK_A2A_LAYER, ui: null, erc8004: null, reputation: null }
+            }
+        } )
+
+        const after = makeAssessment( {
+            overrides: {
+                layers: { mcp: MOCK_MCP_LAYER, a2a: MOCK_A2A_LAYER, ui: null, erc8004: null, reputation: null }
+            }
+        } )
+
+        mockMcpCompare.mockReturnValue( { status: true, messages: [], hasChanges: false, diff: EMPTY_MCP_DIFF } )
+        mockA2aCompare.mockReturnValue( { status: true, messages: [], hasChanges: false, diff: EMPTY_A2A_DIFF } )
+
+        const result = McpAgentAssessment.compare( { before, after } )
+
+        expect( result[ 'diff' ][ 'ui' ] ).toBe( null )
     } )
 
 } )

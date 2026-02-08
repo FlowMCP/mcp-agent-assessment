@@ -1,5 +1,6 @@
 import { McpServerValidator } from 'x402-mcp-validator'
 import { A2aAgentValidator } from 'a2a-agent-validator'
+import { McpAppsValidator } from 'mcp-apps-validator'
 
 import { AssessmentBuilder } from './AssessmentBuilder.mjs'
 import { Erc8004Lookup } from './Erc8004Lookup.mjs'
@@ -12,7 +13,7 @@ class AssessmentPipeline {
     static async run( { endpoint, timeout, erc8004 } ) {
         const origin = new URL( endpoint ).origin
 
-        const { layer1Result, layer2Result, layer3Result, layer4Result } = await AssessmentPipeline.#executeLayers( {
+        const { layer1Result, layer2Result, layer3Result, layer4Result, layer5Result } = await AssessmentPipeline.#executeLayers( {
             endpoint,
             origin,
             timeout,
@@ -23,12 +24,14 @@ class AssessmentPipeline {
         const layer2Messages = ( layer2Result && layer2Result[ 'messages' ] ) || []
         const layer3Messages = AssessmentPipeline.#extractLayer3Messages( { layer3Result } )
         const layer4Messages = ( layer4Result && layer4Result[ 'messages' ] ) || []
+        const layer5Messages = ( layer5Result && layer5Result[ 'messages' ] ) || []
 
         const { classified } = SeverityClassifier.classifyAll( {
             layer1Messages,
             layer2Messages,
             layer3Messages,
-            layer4Messages
+            layer4Messages,
+            layer5Messages
         } )
 
         const { status, categories, entries } = AssessmentBuilder.build( {
@@ -37,14 +40,16 @@ class AssessmentPipeline {
             layer1Result,
             layer2Result,
             layer3Result,
-            layer4Result
+            layer4Result,
+            layer5Result
         } )
 
         const layers = {
             mcp: layer1Result,
             a2a: layer2Result,
             erc8004: layer3Result,
-            reputation: layer4Result
+            reputation: layer4Result,
+            ui: layer5Result
         }
 
         return { status, messages: classified, categories, entries, layers }
@@ -54,7 +59,8 @@ class AssessmentPipeline {
     static async #executeLayers( { endpoint, origin, timeout, erc8004 } ) {
         const promises = [
             AssessmentPipeline.#runLayer1( { endpoint, timeout } ),
-            AssessmentPipeline.#runLayer2( { origin, timeout } )
+            AssessmentPipeline.#runLayer2( { origin, timeout } ),
+            AssessmentPipeline.#runLayer5( { endpoint, timeout } )
         ]
 
         const hasErc8004 = erc8004 !== undefined && erc8004 !== null
@@ -69,12 +75,13 @@ class AssessmentPipeline {
 
         const layer1Result = results[ 0 ].status === 'fulfilled' ? results[ 0 ].value : AssessmentPipeline.#failedLayerResult( { error: results[ 0 ].reason } )
         const layer2Result = results[ 1 ].status === 'fulfilled' ? results[ 1 ].value : AssessmentPipeline.#failedLayerResult( { error: results[ 1 ].reason } )
+        const layer5Result = results[ 2 ].status === 'fulfilled' ? results[ 2 ].value : AssessmentPipeline.#failedLayerResult( { error: results[ 2 ].reason } )
 
         let layer3Result = null
         let layer4Result = null
 
         if( hasErc8004 ) {
-            layer3Result = results[ 2 ].status === 'fulfilled' ? results[ 2 ].value : AssessmentPipeline.#failedLayer3Result( { error: results[ 2 ].reason } )
+            layer3Result = results[ 3 ].status === 'fulfilled' ? results[ 3 ].value : AssessmentPipeline.#failedLayer3Result( { error: results[ 3 ].reason } )
 
             const { rpcNode, agentId } = AssessmentPipeline.#extractLayer3Context( { layer3Result } )
 
@@ -87,7 +94,7 @@ class AssessmentPipeline {
             }
         }
 
-        return { layer1Result, layer2Result, layer3Result, layer4Result }
+        return { layer1Result, layer2Result, layer3Result, layer4Result, layer5Result }
     }
 
 
@@ -129,6 +136,13 @@ class AssessmentPipeline {
         const { result, messages } = await Erc8004Lookup.queryReputation( { rpcNode, agentId, timeout } )
 
         return { result, messages }
+    }
+
+
+    static async #runLayer5( { endpoint, timeout } ) {
+        const result = await McpAppsValidator.start( { endpoint, timeout } )
+
+        return result
     }
 
 

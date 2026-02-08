@@ -5,6 +5,7 @@ import { TEST_ENDPOINT, TEST_ORIGIN, TEST_TIMEOUT, TEST_ERC8004_CONFIG } from '.
 
 const mockMcpStart = jest.fn()
 const mockA2aStart = jest.fn()
+const mockUiStart = jest.fn()
 
 jest.unstable_mockModule( 'x402-mcp-validator', () => ( {
     McpServerValidator: {
@@ -16,6 +17,13 @@ jest.unstable_mockModule( 'x402-mcp-validator', () => ( {
 jest.unstable_mockModule( 'a2a-agent-validator', () => ( {
     A2aAgentValidator: {
         start: mockA2aStart,
+        compare: jest.fn()
+    }
+} ) )
+
+jest.unstable_mockModule( 'mcp-apps-validator', () => ( {
+    McpAppsValidator: {
+        start: mockUiStart,
         compare: jest.fn()
     }
 } ) )
@@ -37,7 +45,13 @@ const MOCK_MCP_RESULT = {
         supportsEvm: true,
         supportsSolana: false,
         supportsTasks: false,
-        supportsMcpApps: false
+        supportsMcpApps: false,
+        supportsOAuth: false,
+        hasProtectedResourceMetadata: false,
+        hasAuthServerMetadata: false,
+        supportsPkce: false,
+        hasDynamicRegistration: false,
+        hasValidOAuthConfig: false
     },
     entries: {
         endpoint: TEST_ENDPOINT,
@@ -58,6 +72,7 @@ const MOCK_MCP_RESULT = {
             schemes: [ 'exact' ],
             perTool: {}
         },
+        oauth: null,
         latency: { ping: 100, listTools: 200 },
         timestamp: '2026-01-01T00:00:00.000Z'
     }
@@ -105,7 +120,13 @@ const MOCK_MCP_FAILURE = {
         supportsEvm: false,
         supportsSolana: false,
         supportsTasks: false,
-        supportsMcpApps: false
+        supportsMcpApps: false,
+        supportsOAuth: false,
+        hasProtectedResourceMetadata: false,
+        hasAuthServerMetadata: false,
+        supportsPkce: false,
+        hasDynamicRegistration: false,
+        hasValidOAuthConfig: false
     },
     entries: {
         endpoint: TEST_ENDPOINT,
@@ -119,6 +140,7 @@ const MOCK_MCP_FAILURE = {
         resources: [],
         prompts: [],
         x402: { version: null, restrictedCalls: [], paymentOptions: [], networks: [], schemes: [], perTool: {} },
+        oauth: null,
         latency: { ping: null, listTools: null },
         timestamp: '2026-01-01T00:00:00.000Z'
     }
@@ -151,6 +173,86 @@ const MOCK_A2A_NOT_FOUND = {
     }
 }
 
+const MOCK_UI_RESULT = {
+    status: true,
+    messages: [],
+    categories: {
+        isReachable: true,
+        supportsMcp: true,
+        supportsMcpApps: true,
+        hasUiResources: true,
+        hasUiToolLinkage: true,
+        hasValidUiHtml: true,
+        hasValidCsp: true,
+        supportsTheming: false,
+        supportsDisplayModes: false,
+        hasToolVisibility: true,
+        hasValidPermissions: true,
+        hasGracefulDegradation: false
+    },
+    entries: {
+        endpoint: TEST_ENDPOINT,
+        serverName: 'TestServer',
+        serverVersion: '1.0.0',
+        serverDescription: 'Test',
+        protocolVersion: '2025-03-26',
+        extensionVersion: '2026-01-26',
+        capabilities: {},
+        uiResourceCount: 1,
+        uiResources: [ { uri: 'ui://dashboard', name: 'Dashboard', mimeType: 'text/html;profile=mcp-app', hasCsp: true, hasPermissions: true, displayModes: [] } ],
+        uiLinkedToolCount: 1,
+        uiLinkedTools: [ { name: 'get_weather', resourceUri: 'ui://dashboard', visibility: [ 'model', 'app' ] } ],
+        appOnlyToolCount: 0,
+        cspSummary: { connectDomains: [], resourceDomains: [], frameDomains: [] },
+        permissionsSummary: [],
+        displayModes: [],
+        tools: [],
+        resources: [],
+        latency: { listResources: 80, readResource: 150 },
+        timestamp: '2026-01-01T00:00:00.000Z'
+    }
+}
+
+const MOCK_UI_NOT_FOUND = {
+    status: false,
+    messages: [ 'CON-001 endpoint: Server is not reachable' ],
+    categories: {
+        isReachable: false,
+        supportsMcp: false,
+        supportsMcpApps: false,
+        hasUiResources: false,
+        hasUiToolLinkage: false,
+        hasValidUiHtml: false,
+        hasValidCsp: false,
+        supportsTheming: false,
+        supportsDisplayModes: false,
+        hasToolVisibility: false,
+        hasValidPermissions: false,
+        hasGracefulDegradation: false
+    },
+    entries: {
+        endpoint: TEST_ENDPOINT,
+        serverName: null,
+        serverVersion: null,
+        serverDescription: null,
+        protocolVersion: null,
+        extensionVersion: null,
+        capabilities: null,
+        uiResourceCount: 0,
+        uiResources: [],
+        uiLinkedToolCount: 0,
+        uiLinkedTools: [],
+        appOnlyToolCount: 0,
+        cspSummary: { connectDomains: [], resourceDomains: [], frameDomains: [] },
+        permissionsSummary: [],
+        displayModes: [],
+        tools: [],
+        resources: [],
+        latency: { listResources: null, readResource: null },
+        timestamp: '2026-01-01T00:00:00.000Z'
+    }
+}
+
 
 describe( 'McpAgentAssessment.assess', () => {
 
@@ -161,6 +263,8 @@ describe( 'McpAgentAssessment.assess', () => {
         McpAgentAssessment = mod.McpAgentAssessment
         mockMcpStart.mockReset()
         mockA2aStart.mockReset()
+        mockUiStart.mockReset()
+        mockUiStart.mockResolvedValue( MOCK_UI_RESULT )
     } )
 
     afterEach( () => {
@@ -202,6 +306,7 @@ describe( 'McpAgentAssessment.assess', () => {
     test( 'returns healthy assessment when MCP and A2A succeed', async () => {
         mockMcpStart.mockResolvedValue( MOCK_MCP_RESULT )
         mockA2aStart.mockResolvedValue( MOCK_A2A_RESULT )
+        mockUiStart.mockResolvedValue( MOCK_UI_RESULT )
 
         const result = await McpAgentAssessment.assess( {
             endpoint: TEST_ENDPOINT,
@@ -213,15 +318,20 @@ describe( 'McpAgentAssessment.assess', () => {
         expect( result[ 'categories' ][ 'supportsMcp' ] ).toBe( true )
         expect( result[ 'categories' ][ 'hasA2aCard' ] ).toBe( true )
         expect( result[ 'categories' ][ 'overallHealthy' ] ).toBe( true )
+        expect( result[ 'categories' ][ 'uiSupportsMcpApps' ] ).toBe( true )
+        expect( result[ 'categories' ][ 'uiHasUiResources' ] ).toBe( true )
 
         expect( result[ 'entries' ][ 'endpoint' ] ).toBe( TEST_ENDPOINT )
         expect( result[ 'entries' ][ 'mcp' ][ 'serverName' ] ).toBe( 'TestServer' )
         expect( result[ 'entries' ][ 'mcp' ][ 'toolCount' ] ).toBe( 1 )
         expect( result[ 'entries' ][ 'a2a' ][ 'agentName' ] ).toBe( 'TestAgent' )
+        expect( result[ 'entries' ][ 'ui' ][ 'extensionVersion' ] ).toBe( '2026-01-26' )
+        expect( result[ 'entries' ][ 'ui' ][ 'uiResourceCount' ] ).toBe( 1 )
         expect( result[ 'entries' ][ 'assessment' ][ 'grade' ] ).toBe( 'A' )
 
         expect( result[ 'layers' ][ 'mcp' ] ).toBeDefined()
         expect( result[ 'layers' ][ 'a2a' ] ).toBeDefined()
+        expect( result[ 'layers' ][ 'ui' ] ).toBeDefined()
         expect( result[ 'layers' ][ 'erc8004' ] ).toBe( null )
         expect( result[ 'layers' ][ 'reputation' ] ).toBe( null )
     } )
@@ -230,6 +340,7 @@ describe( 'McpAgentAssessment.assess', () => {
     test( 'returns unhealthy assessment when MCP fails', async () => {
         mockMcpStart.mockResolvedValue( MOCK_MCP_FAILURE )
         mockA2aStart.mockResolvedValue( MOCK_A2A_NOT_FOUND )
+        mockUiStart.mockResolvedValue( MOCK_UI_NOT_FOUND )
 
         const result = await McpAgentAssessment.assess( {
             endpoint: TEST_ENDPOINT,
@@ -247,6 +358,7 @@ describe( 'McpAgentAssessment.assess', () => {
     test( 'classifies MCP errors as ERROR severity', async () => {
         mockMcpStart.mockResolvedValue( MOCK_MCP_FAILURE )
         mockA2aStart.mockResolvedValue( MOCK_A2A_NOT_FOUND )
+        mockUiStart.mockResolvedValue( MOCK_UI_NOT_FOUND )
 
         const result = await McpAgentAssessment.assess( {
             endpoint: TEST_ENDPOINT,
@@ -371,6 +483,55 @@ describe( 'McpAgentAssessment.assess', () => {
         const result = await McpAgentAssessment.assess( { endpoint: TEST_ENDPOINT } )
 
         expect( result[ 'status' ] ).toBe( true )
+    } )
+
+
+    test( 'runs UI layer in parallel with MCP and A2A', async () => {
+        mockMcpStart.mockResolvedValue( MOCK_MCP_RESULT )
+        mockA2aStart.mockResolvedValue( MOCK_A2A_RESULT )
+        mockUiStart.mockResolvedValue( MOCK_UI_RESULT )
+
+        await McpAgentAssessment.assess( { endpoint: TEST_ENDPOINT } )
+
+        expect( mockUiStart ).toHaveBeenCalledTimes( 1 )
+        expect( mockUiStart.mock.calls[ 0 ][ 0 ][ 'endpoint' ] ).toBe( TEST_ENDPOINT )
+    } )
+
+
+    test( 'returns null ui entries when no UI resources found', async () => {
+        mockMcpStart.mockResolvedValue( MOCK_MCP_RESULT )
+        mockA2aStart.mockResolvedValue( MOCK_A2A_RESULT )
+        mockUiStart.mockResolvedValue( MOCK_UI_NOT_FOUND )
+
+        const result = await McpAgentAssessment.assess( { endpoint: TEST_ENDPOINT } )
+
+        expect( result[ 'categories' ][ 'uiSupportsMcpApps' ] ).toBe( false )
+        expect( result[ 'entries' ][ 'ui' ] ).toBe( null )
+        expect( result[ 'layers' ][ 'ui' ] ).toBeDefined()
+    } )
+
+
+    test( 'classifies UI messages as Layer 5', async () => {
+        mockMcpStart.mockResolvedValue( MOCK_MCP_RESULT )
+        mockA2aStart.mockResolvedValue( MOCK_A2A_RESULT )
+        mockUiStart.mockResolvedValue( {
+            ...MOCK_UI_RESULT,
+            status: false,
+            messages: [ 'UIV-020 ui://dashboard: No CSP configuration declared' ]
+        } )
+
+        const result = await McpAgentAssessment.assess( { endpoint: TEST_ENDPOINT } )
+
+        const uiMessages = result[ 'messages' ]
+            .filter( ( msg ) => {
+                const isLayer5 = msg[ 'layer' ] === 5
+
+                return isLayer5
+            } )
+
+        expect( uiMessages.length ).toBeGreaterThan( 0 )
+        expect( uiMessages[ 0 ][ 'code' ] ).toBe( 'UIV-020' )
+        expect( uiMessages[ 0 ][ 'severity' ] ).toBe( 'WARNING' )
     } )
 
 } )

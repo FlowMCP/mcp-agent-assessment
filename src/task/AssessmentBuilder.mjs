@@ -1,12 +1,13 @@
 class AssessmentBuilder {
 
 
-    static build( { endpoint, classifiedMessages, layer1Result, layer2Result, layer3Result, layer4Result } ) {
+    static build( { endpoint, classifiedMessages, layer1Result, layer2Result, layer3Result, layer4Result, layer5Result } ) {
         const { categories } = AssessmentBuilder.#buildCategories( {
             layer1Result,
             layer2Result,
             layer3Result,
             layer4Result,
+            layer5Result,
             classifiedMessages
         } )
 
@@ -16,6 +17,7 @@ class AssessmentBuilder {
             layer2Result,
             layer3Result,
             layer4Result,
+            layer5Result,
             classifiedMessages
         } )
 
@@ -29,9 +31,10 @@ class AssessmentBuilder {
     }
 
 
-    static #buildCategories( { layer1Result, layer2Result, layer3Result, layer4Result, classifiedMessages } ) {
+    static #buildCategories( { layer1Result, layer2Result, layer3Result, layer4Result, layer5Result, classifiedMessages } ) {
         const layer1Categories = ( layer1Result && layer1Result[ 'categories' ] ) || {}
         const layer2Categories = ( layer2Result && layer2Result[ 'categories' ] ) || {}
+        const layer5Categories = ( layer5Result && layer5Result[ 'categories' ] ) || {}
 
         const categories = {
             isReachable: layer1Categories[ 'isReachable' ] || false,
@@ -47,10 +50,24 @@ class AssessmentBuilder {
             supportsTasks: layer1Categories[ 'supportsTasks' ] || false,
             supportsMcpApps: layer1Categories[ 'supportsMcpApps' ] || false,
 
+            supportsOAuth: layer1Categories[ 'supportsOAuth' ] || false,
+            hasProtectedResourceMetadata: layer1Categories[ 'hasProtectedResourceMetadata' ] || false,
+            hasAuthServerMetadata: layer1Categories[ 'hasAuthServerMetadata' ] || false,
+            supportsPkce: layer1Categories[ 'supportsPkce' ] || false,
+            hasDynamicRegistration: layer1Categories[ 'hasDynamicRegistration' ] || false,
+            hasValidOAuthConfig: layer1Categories[ 'hasValidOAuthConfig' ] || false,
+
             hasA2aCard: layer2Categories[ 'isReachable' ] || false,
             hasA2aValidStructure: layer2Categories[ 'hasValidStructure' ] || false,
             hasA2aSkills: layer2Categories[ 'hasSkills' ] || false,
             supportsA2aStreaming: layer2Categories[ 'supportsStreaming' ] || false,
+
+            uiSupportsMcpApps: layer5Categories[ 'supportsMcpApps' ] || false,
+            uiHasUiResources: layer5Categories[ 'hasUiResources' ] || false,
+            uiHasToolLinkage: layer5Categories[ 'hasUiToolLinkage' ] || false,
+            uiHasValidHtml: layer5Categories[ 'hasValidUiHtml' ] || false,
+            uiHasValidCsp: layer5Categories[ 'hasValidCsp' ] || false,
+            uiSupportsTheming: layer5Categories[ 'supportsTheming' ] || false,
 
             hasWellKnownRegistration: false,
             hasErc8004Registration: false,
@@ -99,7 +116,7 @@ class AssessmentBuilder {
     }
 
 
-    static #buildEntries( { endpoint, layer1Result, layer2Result, layer3Result, layer4Result, classifiedMessages } ) {
+    static #buildEntries( { endpoint, layer1Result, layer2Result, layer3Result, layer4Result, layer5Result, classifiedMessages } ) {
         const layer1Entries = ( layer1Result && layer1Result[ 'entries' ] ) || {}
         const layer2Entries = ( layer2Result && layer2Result[ 'entries' ] ) || {}
 
@@ -124,10 +141,13 @@ class AssessmentBuilder {
                 resources: layer1Entries[ 'resources' ] || null,
                 prompts: layer1Entries[ 'prompts' ] || null,
                 x402: layer1Entries[ 'x402' ] || null,
+                oauth: layer1Entries[ 'oauth' ] || null,
                 latency: layer1Entries[ 'latency' ] || null
             },
 
             a2a: AssessmentBuilder.#buildA2aEntries( { layer2Entries } ),
+
+            ui: AssessmentBuilder.#buildUiEntries( { layer5Result } ),
 
             erc8004: AssessmentBuilder.#buildErc8004Entries( { layer3Result } ),
 
@@ -165,6 +185,34 @@ class AssessmentBuilder {
         }
 
         return a2a
+    }
+
+
+    static #buildUiEntries( { layer5Result } ) {
+        if( !layer5Result || !layer5Result[ 'entries' ] ) {
+            return null
+        }
+
+        const layer5Entries = layer5Result[ 'entries' ]
+
+        if( !layer5Entries[ 'extensionVersion' ] && ( layer5Entries[ 'uiResourceCount' ] || 0 ) === 0 ) {
+            return null
+        }
+
+        const ui = {
+            extensionVersion: layer5Entries[ 'extensionVersion' ] || null,
+            uiResourceCount: layer5Entries[ 'uiResourceCount' ] || 0,
+            uiResources: layer5Entries[ 'uiResources' ] || [],
+            uiLinkedToolCount: layer5Entries[ 'uiLinkedToolCount' ] || 0,
+            uiLinkedTools: layer5Entries[ 'uiLinkedTools' ] || [],
+            appOnlyToolCount: layer5Entries[ 'appOnlyToolCount' ] || 0,
+            displayModes: layer5Entries[ 'displayModes' ] || [],
+            cspSummary: layer5Entries[ 'cspSummary' ] || null,
+            permissionsSummary: layer5Entries[ 'permissionsSummary' ] || [],
+            latency: layer5Entries[ 'latency' ] || null
+        }
+
+        return ui
     }
 
 

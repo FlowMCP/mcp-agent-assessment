@@ -1,5 +1,6 @@
 import { McpServerValidator } from 'x402-mcp-validator'
 import { A2aAgentValidator } from 'a2a-agent-validator'
+import { McpAppsValidator } from 'mcp-apps-validator'
 
 
 class AssessmentComparator {
@@ -13,6 +14,7 @@ class AssessmentComparator {
 
         const { mcpDiff } = AssessmentComparator.#compareMcp( { before, after } )
         const { a2aDiff } = AssessmentComparator.#compareA2a( { before, after } )
+        const { uiDiff } = AssessmentComparator.#compareUi( { before, after } )
         const { erc8004Diff } = AssessmentComparator.#compareErc8004( { before, after } )
         const { reputationDiff } = AssessmentComparator.#compareReputation( { before, after } )
         const { assessmentDiff } = AssessmentComparator.#compareAssessment( { before, after } )
@@ -20,6 +22,7 @@ class AssessmentComparator {
         const diff = {
             mcp: mcpDiff,
             a2a: a2aDiff,
+            ui: uiDiff,
             erc8004: erc8004Diff,
             reputation: reputationDiff,
             assessment: assessmentDiff
@@ -98,6 +101,29 @@ class AssessmentComparator {
             return { a2aDiff: diff }
         } catch( _e ) {
             return { a2aDiff: null }
+        }
+    }
+
+
+    static #compareUi( { before, after } ) {
+        const beforeLayers = before[ 'layers' ]
+        const afterLayers = after[ 'layers' ]
+
+        if( !beforeLayers || !afterLayers || !beforeLayers[ 'ui' ] || !afterLayers[ 'ui' ] ) {
+            const uiDiff = null
+
+            return { uiDiff }
+        }
+
+        try {
+            const { diff } = McpAppsValidator.compare( {
+                before: beforeLayers[ 'ui' ],
+                after: afterLayers[ 'ui' ]
+            } )
+
+            return { uiDiff: diff }
+        } catch( _e ) {
+            return { uiDiff: null }
         }
     }
 
@@ -228,7 +254,7 @@ class AssessmentComparator {
 
 
     static #detectChanges( { diff } ) {
-        const { mcp, a2a, erc8004, reputation, assessment } = diff
+        const { mcp, a2a, ui, erc8004, reputation, assessment } = diff
 
         if( mcp ) {
             const hasMcpChanges = Object.values( mcp )
@@ -282,6 +308,34 @@ class AssessmentComparator {
                 } )
 
             if( hasA2aChanges ) {
+                return { hasChanges: true }
+            }
+        }
+
+        if( ui ) {
+            const hasUiChanges = Object.values( ui )
+                .some( ( section ) => {
+                    if( !section || typeof section !== 'object' ) {
+                        return false
+                    }
+
+                    const hasContent = Object.values( section )
+                        .some( ( val ) => {
+                            if( Array.isArray( val ) ) {
+                                return val.length > 0
+                            }
+
+                            if( typeof val === 'object' && val !== null ) {
+                                return Object.keys( val ).length > 0
+                            }
+
+                            return false
+                        } )
+
+                    return hasContent
+                } )
+
+            if( hasUiChanges ) {
                 return { hasChanges: true }
             }
         }

@@ -23,7 +23,13 @@ describe( 'AssessmentBuilder', () => {
                     supportsEvm: true,
                     supportsSolana: false,
                     supportsTasks: false,
-                    supportsMcpApps: false
+                    supportsMcpApps: false,
+                    supportsOAuth: false,
+                    hasProtectedResourceMetadata: false,
+                    hasAuthServerMetadata: false,
+                    supportsPkce: false,
+                    hasDynamicRegistration: false,
+                    hasValidOAuthConfig: false
                 },
                 entries: {
                     endpoint: TEST_ENDPOINT,
@@ -43,6 +49,20 @@ describe( 'AssessmentBuilder', () => {
                         networks: [ 'BASE_MAINNET' ],
                         schemes: [ 'exact' ],
                         perTool: {}
+                    },
+                    oauth: {
+                        issuer: null,
+                        authorizationEndpoint: null,
+                        tokenEndpoint: null,
+                        registrationEndpoint: null,
+                        revocationEndpoint: null,
+                        scopesSupported: [],
+                        grantTypesSupported: [],
+                        responseTypesSupported: [],
+                        pkceMethodsSupported: [],
+                        clientIdMetadataDocumentSupported: false,
+                        protectedResourceMetadataUrl: null,
+                        mcpVersion: null
                     },
                     latency: { ping: 120, listTools: 250 },
                     timestamp: '2026-01-01T00:00:00.000Z'
@@ -110,6 +130,39 @@ describe( 'AssessmentBuilder', () => {
                 messages: []
             }
 
+            const layer5Result = {
+                status: true,
+                messages: [],
+                categories: {
+                    isReachable: true,
+                    supportsMcp: true,
+                    supportsMcpApps: true,
+                    hasUiResources: true,
+                    hasUiToolLinkage: true,
+                    hasValidUiHtml: true,
+                    hasValidCsp: true,
+                    supportsTheming: false,
+                    supportsDisplayModes: false,
+                    hasToolVisibility: true,
+                    hasValidPermissions: true,
+                    hasGracefulDegradation: false
+                },
+                entries: {
+                    endpoint: TEST_ENDPOINT,
+                    extensionVersion: '2026-01-26',
+                    uiResourceCount: 1,
+                    uiResources: [ { uri: 'ui://dashboard', name: 'Dashboard' } ],
+                    uiLinkedToolCount: 1,
+                    uiLinkedTools: [ { name: 'get_weather', resourceUri: 'ui://dashboard', visibility: [ 'model', 'app' ] } ],
+                    appOnlyToolCount: 0,
+                    cspSummary: { connectDomains: [], resourceDomains: [], frameDomains: [] },
+                    permissionsSummary: [],
+                    displayModes: [],
+                    latency: { listResources: 80, readResource: 150 },
+                    timestamp: '2026-01-01T00:00:00.000Z'
+                }
+            }
+
             const classifiedMessages = [
                 { code: 'PRB-005', severity: 'INFO', layer: 1, location: null, message: 'PRB-005: No tools to probe' }
             ]
@@ -120,7 +173,8 @@ describe( 'AssessmentBuilder', () => {
                 layer1Result,
                 layer2Result,
                 layer3Result,
-                layer4Result
+                layer4Result,
+                layer5Result
             } )
 
             expect( status ).toBe( true )
@@ -130,17 +184,26 @@ describe( 'AssessmentBuilder', () => {
             expect( categories[ 'supportsX402' ] ).toBe( true )
             expect( categories[ 'hasA2aCard' ] ).toBe( true )
             expect( categories[ 'hasA2aValidStructure' ] ).toBe( true )
+            expect( categories[ 'uiSupportsMcpApps' ] ).toBe( true )
+            expect( categories[ 'uiHasUiResources' ] ).toBe( true )
+            expect( categories[ 'uiHasValidCsp' ] ).toBe( true )
             expect( categories[ 'hasWellKnownRegistration' ] ).toBe( true )
             expect( categories[ 'hasErc8004Registration' ] ).toBe( true )
             expect( categories[ 'isErc8004OnChainVerified' ] ).toBe( true )
             expect( categories[ 'isErc8004SpecCompliant' ] ).toBe( true )
             expect( categories[ 'hasOnChainReputation' ] ).toBe( true )
+            expect( categories[ 'supportsOAuth' ] ).toBe( false )
+            expect( categories[ 'hasValidOAuthConfig' ] ).toBe( false )
             expect( categories[ 'overallHealthy' ] ).toBe( true )
 
             expect( entries[ 'endpoint' ] ).toBe( TEST_ENDPOINT )
             expect( entries[ 'mcp' ][ 'serverName' ] ).toBe( 'TestServer' )
             expect( entries[ 'mcp' ][ 'toolCount' ] ).toBe( 1 )
+            expect( entries[ 'mcp' ][ 'oauth' ] ).not.toBeNull()
+            expect( entries[ 'mcp' ][ 'oauth' ][ 'issuer' ] ).toBeNull()
             expect( entries[ 'a2a' ][ 'agentName' ] ).toBe( 'TestAgent' )
+            expect( entries[ 'ui' ][ 'extensionVersion' ] ).toBe( '2026-01-26' )
+            expect( entries[ 'ui' ][ 'uiResourceCount' ] ).toBe( 1 )
             expect( entries[ 'erc8004' ][ 'agentId' ] ).toBe( '42' )
             expect( entries[ 'reputation' ][ 'feedbackCount' ] ).toBe( 5 )
             expect( entries[ 'assessment' ][ 'grade' ] ).toBe( 'A' )
@@ -159,7 +222,8 @@ describe( 'AssessmentBuilder', () => {
                 layer1Result: { status: false, messages: [], categories: {}, entries: {} },
                 layer2Result: null,
                 layer3Result: null,
-                layer4Result: null
+                layer4Result: null,
+                layer5Result: null
             } )
 
             expect( status ).toBe( false )
@@ -181,7 +245,8 @@ describe( 'AssessmentBuilder', () => {
                 layer1Result: { status: true, messages: [], categories: { isReachable: true }, entries: {} },
                 layer2Result: null,
                 layer3Result: null,
-                layer4Result: null
+                layer4Result: null,
+                layer5Result: null
             } )
 
             expect( status ).toBe( true )
@@ -197,10 +262,26 @@ describe( 'AssessmentBuilder', () => {
                 layer1Result: { status: true, messages: [], categories: {}, entries: {} },
                 layer2Result: null,
                 layer3Result: null,
-                layer4Result: null
+                layer4Result: null,
+                layer5Result: null
             } )
 
             expect( entries[ 'a2a' ] ).toBe( null )
+        } )
+
+
+        test( 'returns null for ui when no UI data', () => {
+            const { entries } = AssessmentBuilder.build( {
+                endpoint: TEST_ENDPOINT,
+                classifiedMessages: [],
+                layer1Result: { status: true, messages: [], categories: {}, entries: {} },
+                layer2Result: null,
+                layer3Result: null,
+                layer4Result: null,
+                layer5Result: null
+            } )
+
+            expect( entries[ 'ui' ] ).toBe( null )
         } )
 
 
@@ -211,7 +292,8 @@ describe( 'AssessmentBuilder', () => {
                 layer1Result: { status: true, messages: [], categories: {}, entries: {} },
                 layer2Result: null,
                 layer3Result: null,
-                layer4Result: null
+                layer4Result: null,
+                layer5Result: null
             } )
 
             expect( entries[ 'erc8004' ] ).toBe( null )
@@ -225,7 +307,8 @@ describe( 'AssessmentBuilder', () => {
                 layer1Result: { status: true, messages: [], categories: {}, entries: {} },
                 layer2Result: null,
                 layer3Result: null,
-                layer4Result: null
+                layer4Result: null,
+                layer5Result: null
             } )
 
             expect( entries[ 'reputation' ] ).toBe( null )

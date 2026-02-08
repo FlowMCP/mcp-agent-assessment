@@ -44,7 +44,14 @@ class SeverityClassifier {
         'PRB-002': 'INFO',
         'PRB-003': 'INFO',
         'PRB-004': 'INFO',
-        'PRB-005': 'INFO'
+        'PRB-005': 'INFO',
+        'AUTH-001': 'INFO',
+        'AUTH-002': 'INFO',
+        'AUTH-003': 'INFO',
+        'AUTH-004': 'INFO',
+        'AUTH-005': 'INFO',
+        'AUTH-010': 'INFO',
+        'AUTH-011': 'INFO'
     }
 
 
@@ -103,6 +110,29 @@ class SeverityClassifier {
     }
 
 
+    static #LAYER_5_SEVERITY = {
+        'CON-001': 'ERROR',
+        'CON-004': 'ERROR',
+        'CON-008': 'WARNING',
+        'CON-010': 'WARNING',
+        'UIR-001': 'WARNING',
+        'UIR-002': 'WARNING',
+        'UIV-010': 'WARNING',
+        'UIV-011': 'WARNING',
+        'UIV-012': 'WARNING',
+        'UIV-020': 'WARNING',
+        'UIV-021': 'WARNING',
+        'UIV-022': 'WARNING',
+        'UIV-030': 'WARNING',
+        'UIV-031': 'WARNING',
+        'UIV-040': 'INFO',
+        'UIV-050': 'INFO',
+        'UIV-060': 'WARNING',
+        'UIV-061': 'WARNING',
+        'UIV-070': 'INFO'
+    }
+
+
     static classify( { messages, layer } ) {
         const classified = messages
             .map( ( message ) => {
@@ -123,7 +153,7 @@ class SeverityClassifier {
     }
 
 
-    static classifyAll( { layer1Messages, layer2Messages, layer3Messages, layer4Messages } ) {
+    static classifyAll( { layer1Messages, layer2Messages, layer3Messages, layer4Messages, layer5Messages } ) {
         const allClassified = []
 
         if( layer1Messages && layer1Messages.length > 0 ) {
@@ -146,12 +176,17 @@ class SeverityClassifier {
             allClassified.push( ...classified )
         }
 
+        if( layer5Messages && layer5Messages.length > 0 ) {
+            const { classified } = SeverityClassifier.classify( { messages: layer5Messages, layer: 5 } )
+            allClassified.push( ...classified )
+        }
+
         return { classified: allClassified }
     }
 
 
     static #extractCode( { message } ) {
-        const match = message.match( /^([A-Z]{3}-\d{3})/ )
+        const match = message.match( /^([A-Z]{3,4}-\d{3})/ )
         const code = match ? match[ 1 ] : 'UNK-000'
 
         return { code }
@@ -203,7 +238,8 @@ class SeverityClassifier {
             1: SeverityClassifier.#LAYER_1_SEVERITY,
             2: SeverityClassifier.#LAYER_2_SEVERITY,
             3: SeverityClassifier.#LAYER_3_SEVERITY,
-            4: SeverityClassifier.#LAYER_4_SEVERITY
+            4: SeverityClassifier.#LAYER_4_SEVERITY,
+            5: SeverityClassifier.#LAYER_5_SEVERITY
         }
 
         const map = maps[ layer ] || null
