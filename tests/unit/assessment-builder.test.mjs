@@ -78,8 +78,13 @@ describe( 'AssessmentBuilder', () => {
                     hasValidStructure: true,
                     hasSkills: true,
                     supportsStreaming: false,
+                    hasSecuritySchemes: true,
+                    hasProvider: true,
                     supportsPushNotifications: false,
-                    supportsExtendedCard: false
+                    supportsJsonRpc: true,
+                    supportsGrpc: false,
+                    supportsExtendedCard: false,
+                    hasDocumentation: true
                 },
                 entries: {
                     url: 'https://mcp.example.com',
@@ -184,6 +189,15 @@ describe( 'AssessmentBuilder', () => {
             expect( categories[ 'supportsX402' ] ).toBe( true )
             expect( categories[ 'hasA2aCard' ] ).toBe( true )
             expect( categories[ 'hasA2aValidStructure' ] ).toBe( true )
+            expect( categories[ 'hasA2aSkills' ] ).toBe( true )
+            expect( categories[ 'supportsA2aStreaming' ] ).toBe( false )
+            expect( categories[ 'hasA2aSecuritySchemes' ] ).toBe( true )
+            expect( categories[ 'hasA2aProvider' ] ).toBe( true )
+            expect( categories[ 'supportsA2aPushNotifications' ] ).toBe( false )
+            expect( categories[ 'supportsA2aJsonRpc' ] ).toBe( true )
+            expect( categories[ 'supportsA2aGrpc' ] ).toBe( false )
+            expect( categories[ 'supportsA2aExtendedCard' ] ).toBe( false )
+            expect( categories[ 'hasA2aDocumentation' ] ).toBe( true )
             expect( categories[ 'uiSupportsMcpApps' ] ).toBe( true )
             expect( categories[ 'uiHasUiResources' ] ).toBe( true )
             expect( categories[ 'uiHasValidCsp' ] ).toBe( true )

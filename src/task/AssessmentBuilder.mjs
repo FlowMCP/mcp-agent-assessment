@@ -61,6 +61,13 @@ class AssessmentBuilder {
             hasA2aValidStructure: layer2Categories[ 'hasValidStructure' ] || false,
             hasA2aSkills: layer2Categories[ 'hasSkills' ] || false,
             supportsA2aStreaming: layer2Categories[ 'supportsStreaming' ] || false,
+            hasA2aSecuritySchemes: layer2Categories[ 'hasSecuritySchemes' ] || false,
+            hasA2aProvider: layer2Categories[ 'hasProvider' ] || false,
+            supportsA2aPushNotifications: layer2Categories[ 'supportsPushNotifications' ] || false,
+            supportsA2aJsonRpc: layer2Categories[ 'supportsJsonRpc' ] || false,
+            supportsA2aGrpc: layer2Categories[ 'supportsGrpc' ] || false,
+            supportsA2aExtendedCard: layer2Categories[ 'supportsExtendedCard' ] || false,
+            hasA2aDocumentation: layer2Categories[ 'hasDocumentation' ] || false,
 
             uiSupportsMcpApps: layer5Categories[ 'supportsMcpApps' ] || false,
             uiHasUiResources: layer5Categories[ 'hasUiResources' ] || false,
