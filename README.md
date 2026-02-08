@@ -337,6 +337,75 @@ The assessment returns 22 boolean flags categorizing server capabilities:
 |------|-------------|
 | overallHealthy | No ERROR messages across all layers |
 
+## Validation Codes
+
+The assessment pipeline classifies every message with a severity (ERROR, WARNING, INFO) based on the `SeverityClassifier`.
+
+### ASM — Assessment Input Validation
+
+| Code | Severity | Description |
+|------|----------|-------------|
+| ASM-001 | ERROR | endpoint: Missing value |
+| ASM-002 | ERROR | endpoint: Must be a string |
+| ASM-003 | ERROR | endpoint: Must not be empty |
+| ASM-004 | ERROR | endpoint: Must be a valid URL |
+| ASM-005 | ERROR | timeout: Must be a number |
+| ASM-006 | ERROR | timeout: Must be greater than 0 |
+| ASM-010 | ERROR | erc8004: Must be an object |
+| ASM-011 | ERROR | erc8004.rpcNodes: Missing value |
+| ASM-012 | ERROR | erc8004.rpcNodes: Must be an object |
+| ASM-013 | ERROR | erc8004.rpcNodes: Must have at least one entry |
+| ASM-014 | ERROR | erc8004.rpcNodes: Key must be a non-empty string |
+| ASM-015 | ERROR | erc8004.rpcNodes: Value must be a non-empty string |
+| ASM-016 | ERROR | erc8004.rpcNodes: Must be a valid URL |
+| ASM-020 | ERROR | before: Missing value |
+| ASM-021 | ERROR | before: Must be an object |
+| ASM-022 | ERROR | before: Missing categories or entries |
+| ASM-023 | ERROR | after: Missing value |
+| ASM-024 | ERROR | after: Must be an object |
+| ASM-025 | ERROR | after: Missing categories or entries |
+
+### REG — ERC-8004 Registry
+
+| Code | Severity | Description |
+|------|----------|-------------|
+| REG-001 | INFO | well-known: File not found or not reachable |
+| REG-002 | WARNING | well-known: Response is not valid JSON |
+| REG-003 | WARNING | well-known: Missing or invalid "registrations" array |
+| REG-020 | WARNING | agentId: Missing required field |
+| REG-021 | WARNING | agentRegistry: Missing required field |
+| REG-022 | WARNING | chainId: Missing or unknown chain identifier |
+| REG-030 | WARNING | spec: Validation issue in on-chain data |
+
+### RPC — On-Chain RPC
+
+| Code | Severity | Description |
+|------|----------|-------------|
+| RPC-001 | ERROR | rpcNodes: No RPC node configured for chain |
+| RPC-002 | ERROR | eth_call: RPC call failed |
+| RPC-003 | WARNING | registry: Agent not found in on-chain registry |
+| RPC-010 | ERROR | reputation: RPC call failed |
+
+### REP — Reputation
+
+| Code | Severity | Description |
+|------|----------|-------------|
+| REP-001 | INFO | No reputation data found |
+
+### CON — Connection (Layer 1 / Layer 5)
+
+| Code | Severity | Description |
+|------|----------|-------------|
+| CON-001 | ERROR | endpoint: Server is not reachable |
+
+### CMP — Comparison
+
+| Code | Severity | Description |
+|------|----------|-------------|
+| CMP-001 | WARNING | Endpoints differ between snapshots |
+| CMP-002 | WARNING | Before snapshot missing timestamp |
+| CMP-003 | WARNING | After snapshot is older than before snapshot |
+
 ## Contribution
 
 PRs are welcome! Please ensure:
