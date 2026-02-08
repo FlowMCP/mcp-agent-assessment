@@ -126,10 +126,16 @@ class SeverityClassifier {
         'UIV-030': 'WARNING',
         'UIV-031': 'WARNING',
         'UIV-040': 'INFO',
+        'UIV-041': 'INFO',
         'UIV-050': 'INFO',
         'UIV-060': 'WARNING',
         'UIV-061': 'WARNING',
-        'UIV-070': 'INFO'
+        'UIV-062': 'INFO',
+        'UIV-063': 'INFO',
+        'UIV-070': 'INFO',
+        'UIV-080': 'INFO',
+        'UIV-081': 'INFO',
+        'UIV-013': 'WARNING'
     }
 
 

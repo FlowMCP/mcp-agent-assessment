@@ -127,6 +127,38 @@ describe( 'SeverityClassifier', () => {
         } )
 
 
+        test( 'classifies new Layer 5 error codes correctly', () => {
+            const messages = [
+                'UIV-013 ui://dashboard: HTML content appears invalid (missing doctype, html, or body tag)',
+                'UIV-041 ui://dashboard: No display modes declared',
+                'UIV-062 tools: No tools linked to UI resources',
+                'UIV-063 incomplete_tool: Has UI metadata but no resourceUri',
+                'UIV-080 capabilities: MCP Apps extension not declared (missing io.modelcontextprotocol/ui)',
+                'UIV-081 capabilities: Extension version not specified'
+            ]
+
+            const { classified } = SeverityClassifier.classify( { messages, layer: 5 } )
+
+            expect( classified[ 0 ][ 'code' ] ).toBe( 'UIV-013' )
+            expect( classified[ 0 ][ 'severity' ] ).toBe( 'WARNING' )
+
+            expect( classified[ 1 ][ 'code' ] ).toBe( 'UIV-041' )
+            expect( classified[ 1 ][ 'severity' ] ).toBe( 'INFO' )
+
+            expect( classified[ 2 ][ 'code' ] ).toBe( 'UIV-062' )
+            expect( classified[ 2 ][ 'severity' ] ).toBe( 'INFO' )
+
+            expect( classified[ 3 ][ 'code' ] ).toBe( 'UIV-063' )
+            expect( classified[ 3 ][ 'severity' ] ).toBe( 'INFO' )
+
+            expect( classified[ 4 ][ 'code' ] ).toBe( 'UIV-080' )
+            expect( classified[ 4 ][ 'severity' ] ).toBe( 'INFO' )
+
+            expect( classified[ 5 ][ 'code' ] ).toBe( 'UIV-081' )
+            expect( classified[ 5 ][ 'severity' ] ).toBe( 'INFO' )
+        } )
+
+
         test( 'defaults unknown codes to WARNING', () => {
             const messages = [
                 'XYZ-999 unknown: Some unknown error'
