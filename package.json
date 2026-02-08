@@ -21,7 +21,7 @@
     "license": "MIT",
     "dependencies": {
         "x402-mcp-validator": "github:FlowMCP/x402-mcp-validator#cf074bd",
-        "a2a-agent-validator": "github:FlowMCP/a2a-agent-validator#main",
+        "a2a-agent-validator": "github:FlowMCP/a2a-agent-validator#27ced9d",
         "erc8004-registry-parser": "github:FlowMCP/erc8004-registry-parser#main",
         "mcp-apps-validator": "github:FlowMCP/mcp-apps-validator#30cae14"
     },
