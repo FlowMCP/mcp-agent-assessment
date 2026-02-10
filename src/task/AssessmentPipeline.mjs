@@ -94,6 +94,19 @@ class AssessmentPipeline {
             }
         }
 
+        if( !hasErc8004 && layer2Result ) {
+            const erc8004ServiceUrl = AssessmentPipeline.#extractErc8004ServiceUrl( { layer2Result } )
+
+            if( erc8004ServiceUrl ) {
+                try {
+                    const derivedOrigin = new URL( erc8004ServiceUrl ).origin
+                    layer3Result = await AssessmentPipeline.#runLayer3Derived( { origin: derivedOrigin, timeout } )
+                } catch( _error ) {
+                    // Invalid URL in erc8004ServiceUrl — skip silently
+                }
+            }
+        }
+
         return { layer1Result, layer2Result, layer3Result, layer4Result, layer5Result }
     }
 
@@ -143,6 +156,28 @@ class AssessmentPipeline {
         const result = await McpAppsValidator.start( { endpoint, timeout } )
 
         return result
+    }
+
+
+    static #extractErc8004ServiceUrl( { layer2Result } ) {
+        if( !layer2Result || !layer2Result[ 'entries' ] ) {
+            return null
+        }
+
+        const erc8004ServiceUrl = layer2Result[ 'entries' ][ 'erc8004ServiceUrl' ] || null
+
+        return erc8004ServiceUrl
+    }
+
+
+    static async #runLayer3Derived( { origin, timeout } ) {
+        const { found, registrations, messages } = await Erc8004Lookup.fetchRegistration( { origin, timeout } )
+
+        if( !found || registrations.length === 0 ) {
+            return { found, registrations: [], verification: null, messages }
+        }
+
+        return { found, registrations, verification: null, messages }
     }
 
 

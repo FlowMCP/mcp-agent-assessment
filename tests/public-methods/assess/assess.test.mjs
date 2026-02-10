@@ -46,6 +46,17 @@ const MOCK_MCP_RESULT = {
         supportsSolana: false,
         supportsTasks: false,
         supportsMcpApps: false,
+        supportsLogging: false,
+        supportsCompletions: false,
+        supportsResourceSubscription: false,
+        supportsResourceListChanged: false,
+        supportsPromptListChanged: false,
+        supportsToolListChanged: false,
+        supportsTaskList: false,
+        supportsTaskCancel: false,
+        supportsTaskAugmentedToolCall: false,
+        hasExperimentalCapabilities: false,
+        specVersion: null,
         supportsOAuth: false,
         hasProtectedResourceMetadata: false,
         hasAuthServerMetadata: false,
@@ -88,7 +99,9 @@ const MOCK_A2A_RESULT = {
         hasSkills: true,
         supportsStreaming: false,
         supportsPushNotifications: false,
-        supportsExtendedCard: false
+        supportsExtendedCard: false,
+        supportsAp2: false,
+        hasErc8004ServiceLink: false
     },
     entries: {
         url: TEST_ORIGIN,
@@ -101,6 +114,9 @@ const MOCK_A2A_RESULT = {
         skills: [ { id: 'search', name: 'Search' } ],
         protocolBindings: [ 'jsonrpc' ],
         protocolVersion: '1.0',
+        ap2Version: null,
+        erc8004ServiceUrl: null,
+        extensions: null,
         timestamp: '2026-01-01T00:00:00.000Z'
     }
 }
@@ -121,6 +137,17 @@ const MOCK_MCP_FAILURE = {
         supportsSolana: false,
         supportsTasks: false,
         supportsMcpApps: false,
+        supportsLogging: false,
+        supportsCompletions: false,
+        supportsResourceSubscription: false,
+        supportsResourceListChanged: false,
+        supportsPromptListChanged: false,
+        supportsToolListChanged: false,
+        supportsTaskList: false,
+        supportsTaskCancel: false,
+        supportsTaskAugmentedToolCall: false,
+        hasExperimentalCapabilities: false,
+        specVersion: null,
         supportsOAuth: false,
         hasProtectedResourceMetadata: false,
         hasAuthServerMetadata: false,
@@ -156,7 +183,9 @@ const MOCK_A2A_NOT_FOUND = {
         hasSkills: false,
         supportsStreaming: false,
         supportsPushNotifications: false,
-        supportsExtendedCard: false
+        supportsExtendedCard: false,
+        supportsAp2: false,
+        hasErc8004ServiceLink: false
     },
     entries: {
         url: TEST_ORIGIN,
@@ -169,6 +198,9 @@ const MOCK_A2A_NOT_FOUND = {
         skills: null,
         protocolBindings: null,
         protocolVersion: null,
+        ap2Version: null,
+        erc8004ServiceUrl: null,
+        extensions: null,
         timestamp: '2026-01-01T00:00:00.000Z'
     }
 }
@@ -532,6 +564,62 @@ describe( 'McpAgentAssessment.assess', () => {
         expect( uiMessages.length ).toBeGreaterThan( 0 )
         expect( uiMessages[ 0 ][ 'code' ] ).toBe( 'UIV-020' )
         expect( uiMessages[ 0 ][ 'severity' ] ).toBe( 'WARNING' )
+    } )
+
+
+    test( 'triggers ERC-8004 lookup when A2A card has erc8004ServiceUrl', async () => {
+        mockMcpStart.mockResolvedValue( MOCK_MCP_RESULT )
+        mockA2aStart.mockResolvedValue( {
+            ...MOCK_A2A_RESULT,
+            categories: {
+                ...MOCK_A2A_RESULT[ 'categories' ],
+                hasErc8004ServiceLink: true
+            },
+            entries: {
+                ...MOCK_A2A_RESULT[ 'entries' ],
+                erc8004ServiceUrl: 'https://registry.example.com/.well-known/agent-registration.json'
+            }
+        } )
+        mockUiStart.mockResolvedValue( MOCK_UI_RESULT )
+
+        global.fetch = jest.fn( () => {
+            const result = Promise.resolve( {
+                ok: true,
+                status: 200,
+                text: () => Promise.resolve( JSON.stringify( {
+                    registrations: [
+                        { agentId: '99', agentRegistry: '0x8004...', chainId: 8453, name: 'DerivedAgent' }
+                    ]
+                } ) )
+            } )
+
+            return result
+        } )
+
+        const result = await McpAgentAssessment.assess( {
+            endpoint: TEST_ENDPOINT,
+            timeout: TEST_TIMEOUT
+        } )
+
+        expect( result[ 'layers' ][ 'erc8004' ] ).not.toBe( null )
+        expect( result[ 'layers' ][ 'erc8004' ][ 'found' ] ).toBe( true )
+        expect( result[ 'layers' ][ 'erc8004' ][ 'registrations' ] ).toHaveLength( 1 )
+        expect( result[ 'categories' ][ 'hasWellKnownRegistration' ] ).toBe( true )
+    } )
+
+
+    test( 'skips derived ERC-8004 lookup when erc8004ServiceUrl is null', async () => {
+        mockMcpStart.mockResolvedValue( MOCK_MCP_RESULT )
+        mockA2aStart.mockResolvedValue( MOCK_A2A_RESULT )
+        mockUiStart.mockResolvedValue( MOCK_UI_RESULT )
+
+        const result = await McpAgentAssessment.assess( {
+            endpoint: TEST_ENDPOINT,
+            timeout: TEST_TIMEOUT
+        } )
+
+        expect( result[ 'layers' ][ 'erc8004' ] ).toBe( null )
+        expect( result[ 'categories' ][ 'hasWellKnownRegistration' ] ).toBe( false )
     } )
 
 } )

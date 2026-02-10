@@ -24,6 +24,17 @@ describe( 'AssessmentBuilder', () => {
                     supportsSolana: false,
                     supportsTasks: false,
                     supportsMcpApps: false,
+                    supportsLogging: false,
+                    supportsCompletions: false,
+                    supportsResourceSubscription: false,
+                    supportsResourceListChanged: false,
+                    supportsPromptListChanged: false,
+                    supportsToolListChanged: false,
+                    supportsTaskList: false,
+                    supportsTaskCancel: false,
+                    supportsTaskAugmentedToolCall: false,
+                    hasExperimentalCapabilities: false,
+                    specVersion: null,
                     supportsOAuth: false,
                     hasProtectedResourceMetadata: false,
                     hasAuthServerMetadata: false,
@@ -84,7 +95,9 @@ describe( 'AssessmentBuilder', () => {
                     supportsJsonRpc: true,
                     supportsGrpc: false,
                     supportsExtendedCard: false,
-                    hasDocumentation: true
+                    hasDocumentation: true,
+                    supportsAp2: false,
+                    hasErc8004ServiceLink: false
                 },
                 entries: {
                     url: 'https://mcp.example.com',
@@ -97,6 +110,9 @@ describe( 'AssessmentBuilder', () => {
                     skills: [ { id: 's1', name: 'Skill1' } ],
                     protocolBindings: [ 'jsonrpc' ],
                     protocolVersion: '1.0',
+                    ap2Version: null,
+                    erc8004ServiceUrl: null,
+                    extensions: null,
                     timestamp: '2026-01-01T00:00:00.000Z'
                 }
             }
@@ -198,6 +214,19 @@ describe( 'AssessmentBuilder', () => {
             expect( categories[ 'supportsA2aGrpc' ] ).toBe( false )
             expect( categories[ 'supportsA2aExtendedCard' ] ).toBe( false )
             expect( categories[ 'hasA2aDocumentation' ] ).toBe( true )
+            expect( categories[ 'supportsA2aAp2' ] ).toBe( false )
+            expect( categories[ 'hasA2aErc8004ServiceLink' ] ).toBe( false )
+            expect( categories[ 'supportsLogging' ] ).toBe( false )
+            expect( categories[ 'supportsCompletions' ] ).toBe( false )
+            expect( categories[ 'supportsResourceSubscription' ] ).toBe( false )
+            expect( categories[ 'supportsResourceListChanged' ] ).toBe( false )
+            expect( categories[ 'supportsPromptListChanged' ] ).toBe( false )
+            expect( categories[ 'supportsToolListChanged' ] ).toBe( false )
+            expect( categories[ 'supportsTaskList' ] ).toBe( false )
+            expect( categories[ 'supportsTaskCancel' ] ).toBe( false )
+            expect( categories[ 'supportsTaskAugmentedToolCall' ] ).toBe( false )
+            expect( categories[ 'hasExperimentalCapabilities' ] ).toBe( false )
+            expect( categories[ 'specVersion' ] ).toBe( null )
             expect( categories[ 'uiSupportsMcpApps' ] ).toBe( true )
             expect( categories[ 'uiHasUiResources' ] ).toBe( true )
             expect( categories[ 'uiHasValidCsp' ] ).toBe( true )
@@ -215,7 +244,13 @@ describe( 'AssessmentBuilder', () => {
             expect( entries[ 'mcp' ][ 'toolCount' ] ).toBe( 1 )
             expect( entries[ 'mcp' ][ 'oauth' ] ).not.toBeNull()
             expect( entries[ 'mcp' ][ 'oauth' ][ 'issuer' ] ).toBeNull()
+            expect( entries[ 'mcp' ][ 'specVersion' ] ).toBe( null )
+            expect( entries[ 'mcp' ][ 'experimentalCapabilities' ] ).toBe( null )
+            expect( entries[ 'mcp' ][ 'taskCapabilities' ] ).toBe( null )
             expect( entries[ 'a2a' ][ 'agentName' ] ).toBe( 'TestAgent' )
+            expect( entries[ 'a2a' ][ 'ap2Version' ] ).toBe( null )
+            expect( entries[ 'a2a' ][ 'erc8004ServiceUrl' ] ).toBe( null )
+            expect( entries[ 'a2a' ][ 'extensions' ] ).toBe( null )
             expect( entries[ 'ui' ][ 'extensionVersion' ] ).toBe( '2026-01-26' )
             expect( entries[ 'ui' ][ 'uiResourceCount' ] ).toBe( 1 )
             expect( entries[ 'erc8004' ][ 'agentId' ] ).toBe( '42' )
@@ -326,6 +361,199 @@ describe( 'AssessmentBuilder', () => {
             } )
 
             expect( entries[ 'reputation' ] ).toBe( null )
+        } )
+
+
+        test( 'maps new Layer 1 MCP capabilities to assessment categories', () => {
+            const layer1Result = {
+                status: true,
+                messages: [],
+                categories: {
+                    isReachable: true,
+                    supportsMcp: true,
+                    hasTools: true,
+                    hasResources: false,
+                    hasPrompts: false,
+                    supportsX402: false,
+                    hasValidPaymentRequirements: false,
+                    supportsExactScheme: false,
+                    supportsEvm: false,
+                    supportsSolana: false,
+                    supportsTasks: true,
+                    supportsMcpApps: false,
+                    supportsLogging: true,
+                    supportsCompletions: true,
+                    supportsResourceSubscription: true,
+                    supportsResourceListChanged: true,
+                    supportsPromptListChanged: false,
+                    supportsToolListChanged: true,
+                    supportsTaskList: true,
+                    supportsTaskCancel: true,
+                    supportsTaskAugmentedToolCall: false,
+                    hasExperimentalCapabilities: true,
+                    specVersion: '2025-03-26',
+                    supportsOAuth: false,
+                    hasProtectedResourceMetadata: false,
+                    hasAuthServerMetadata: false,
+                    supportsPkce: false,
+                    hasDynamicRegistration: false,
+                    hasValidOAuthConfig: false
+                },
+                entries: {}
+            }
+
+            const { categories } = AssessmentBuilder.build( {
+                endpoint: TEST_ENDPOINT,
+                classifiedMessages: [],
+                layer1Result,
+                layer2Result: null,
+                layer3Result: null,
+                layer4Result: null,
+                layer5Result: null
+            } )
+
+            expect( categories[ 'supportsLogging' ] ).toBe( true )
+            expect( categories[ 'supportsCompletions' ] ).toBe( true )
+            expect( categories[ 'supportsResourceSubscription' ] ).toBe( true )
+            expect( categories[ 'supportsResourceListChanged' ] ).toBe( true )
+            expect( categories[ 'supportsPromptListChanged' ] ).toBe( false )
+            expect( categories[ 'supportsToolListChanged' ] ).toBe( true )
+            expect( categories[ 'supportsTaskList' ] ).toBe( true )
+            expect( categories[ 'supportsTaskCancel' ] ).toBe( true )
+            expect( categories[ 'supportsTaskAugmentedToolCall' ] ).toBe( false )
+            expect( categories[ 'hasExperimentalCapabilities' ] ).toBe( true )
+            expect( categories[ 'specVersion' ] ).toBe( '2025-03-26' )
+        } )
+
+
+        test( 'maps new Layer 2 A2A extensions to assessment categories', () => {
+            const layer2Result = {
+                status: true,
+                messages: [],
+                categories: {
+                    isReachable: true,
+                    hasAgentCard: true,
+                    hasValidStructure: true,
+                    hasSkills: true,
+                    supportsStreaming: false,
+                    hasSecuritySchemes: false,
+                    hasProvider: false,
+                    supportsPushNotifications: false,
+                    supportsJsonRpc: true,
+                    supportsGrpc: false,
+                    supportsExtendedCard: false,
+                    hasDocumentation: false,
+                    supportsAp2: true,
+                    hasErc8004ServiceLink: true
+                },
+                entries: {
+                    agentName: 'TestAgent',
+                    agentDescription: 'Test',
+                    agentVersion: '1.0.0',
+                    providerOrganization: null,
+                    providerUrl: null,
+                    skillCount: 0,
+                    skills: [],
+                    protocolBindings: [],
+                    protocolVersion: '1.0',
+                    ap2Version: '0.2.0',
+                    erc8004ServiceUrl: 'https://registry.example.com',
+                    extensions: { 'x-custom': true }
+                }
+            }
+
+            const { categories, entries } = AssessmentBuilder.build( {
+                endpoint: TEST_ENDPOINT,
+                classifiedMessages: [],
+                layer1Result: { status: true, messages: [], categories: { isReachable: true }, entries: {} },
+                layer2Result,
+                layer3Result: null,
+                layer4Result: null,
+                layer5Result: null
+            } )
+
+            expect( categories[ 'supportsA2aAp2' ] ).toBe( true )
+            expect( categories[ 'hasA2aErc8004ServiceLink' ] ).toBe( true )
+            expect( entries[ 'a2a' ][ 'ap2Version' ] ).toBe( '0.2.0' )
+            expect( entries[ 'a2a' ][ 'erc8004ServiceUrl' ] ).toBe( 'https://registry.example.com' )
+            expect( entries[ 'a2a' ][ 'extensions' ] ).toEqual( { 'x-custom': true } )
+        } )
+
+
+        test( 'includes new MCP entries in assessment', () => {
+            const layer1Result = {
+                status: true,
+                messages: [],
+                categories: { isReachable: true, supportsMcp: true },
+                entries: {
+                    serverName: 'TestServer',
+                    serverVersion: '1.0.0',
+                    serverDescription: 'Test',
+                    protocolVersion: '2025-03-26',
+                    capabilities: { tools: {} },
+                    instructions: null,
+                    tools: [],
+                    resources: [],
+                    prompts: [],
+                    x402: null,
+                    oauth: null,
+                    latency: null,
+                    specVersion: '2025-03-26',
+                    experimentalCapabilities: { 'custom-feature': true },
+                    taskCapabilities: { list: true, cancel: true }
+                }
+            }
+
+            const { entries } = AssessmentBuilder.build( {
+                endpoint: TEST_ENDPOINT,
+                classifiedMessages: [],
+                layer1Result,
+                layer2Result: null,
+                layer3Result: null,
+                layer4Result: null,
+                layer5Result: null
+            } )
+
+            expect( entries[ 'mcp' ][ 'specVersion' ] ).toBe( '2025-03-26' )
+            expect( entries[ 'mcp' ][ 'experimentalCapabilities' ] ).toEqual( { 'custom-feature': true } )
+            expect( entries[ 'mcp' ][ 'taskCapabilities' ] ).toEqual( { list: true, cancel: true } )
+        } )
+
+
+        test( 'includes new A2A entries in assessment', () => {
+            const layer2Result = {
+                status: true,
+                messages: [],
+                categories: { isReachable: true, hasValidStructure: true },
+                entries: {
+                    agentName: 'TestAgent',
+                    agentDescription: 'Test',
+                    agentVersion: '2.0.0',
+                    providerOrganization: 'Org',
+                    providerUrl: 'https://org.com',
+                    skillCount: 1,
+                    skills: [ { id: 's1', name: 'Skill1' } ],
+                    protocolBindings: [ 'jsonrpc' ],
+                    protocolVersion: '1.0',
+                    ap2Version: '0.2.0',
+                    erc8004ServiceUrl: 'https://registry.example.com/.well-known/agent-registration.json',
+                    extensions: { 'x-payment': { enabled: true } }
+                }
+            }
+
+            const { entries } = AssessmentBuilder.build( {
+                endpoint: TEST_ENDPOINT,
+                classifiedMessages: [],
+                layer1Result: { status: true, messages: [], categories: {}, entries: {} },
+                layer2Result,
+                layer3Result: null,
+                layer4Result: null,
+                layer5Result: null
+            } )
+
+            expect( entries[ 'a2a' ][ 'ap2Version' ] ).toBe( '0.2.0' )
+            expect( entries[ 'a2a' ][ 'erc8004ServiceUrl' ] ).toBe( 'https://registry.example.com/.well-known/agent-registration.json' )
+            expect( entries[ 'a2a' ][ 'extensions' ] ).toEqual( { 'x-payment': { enabled: true } } )
         } )
 
     } )

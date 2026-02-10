@@ -49,6 +49,17 @@ class AssessmentBuilder {
             supportsSolana: layer1Categories[ 'supportsSolana' ] || false,
             supportsTasks: layer1Categories[ 'supportsTasks' ] || false,
             supportsMcpApps: layer1Categories[ 'supportsMcpApps' ] || false,
+            supportsLogging: layer1Categories[ 'supportsLogging' ] || false,
+            supportsCompletions: layer1Categories[ 'supportsCompletions' ] || false,
+            supportsResourceSubscription: layer1Categories[ 'supportsResourceSubscription' ] || false,
+            supportsResourceListChanged: layer1Categories[ 'supportsResourceListChanged' ] || false,
+            supportsPromptListChanged: layer1Categories[ 'supportsPromptListChanged' ] || false,
+            supportsToolListChanged: layer1Categories[ 'supportsToolListChanged' ] || false,
+            supportsTaskList: layer1Categories[ 'supportsTaskList' ] || false,
+            supportsTaskCancel: layer1Categories[ 'supportsTaskCancel' ] || false,
+            supportsTaskAugmentedToolCall: layer1Categories[ 'supportsTaskAugmentedToolCall' ] || false,
+            hasExperimentalCapabilities: layer1Categories[ 'hasExperimentalCapabilities' ] || false,
+            specVersion: layer1Categories[ 'specVersion' ] || null,
 
             supportsOAuth: layer1Categories[ 'supportsOAuth' ] || false,
             hasProtectedResourceMetadata: layer1Categories[ 'hasProtectedResourceMetadata' ] || false,
@@ -68,6 +79,8 @@ class AssessmentBuilder {
             supportsA2aGrpc: layer2Categories[ 'supportsGrpc' ] || false,
             supportsA2aExtendedCard: layer2Categories[ 'supportsExtendedCard' ] || false,
             hasA2aDocumentation: layer2Categories[ 'hasDocumentation' ] || false,
+            supportsA2aAp2: layer2Categories[ 'supportsAp2' ] || false,
+            hasA2aErc8004ServiceLink: layer2Categories[ 'hasErc8004ServiceLink' ] || false,
 
             uiSupportsMcpApps: layer5Categories[ 'supportsMcpApps' ] || false,
             uiHasUiResources: layer5Categories[ 'hasUiResources' ] || false,
@@ -149,7 +162,10 @@ class AssessmentBuilder {
                 prompts: layer1Entries[ 'prompts' ] || null,
                 x402: layer1Entries[ 'x402' ] || null,
                 oauth: layer1Entries[ 'oauth' ] || null,
-                latency: layer1Entries[ 'latency' ] || null
+                latency: layer1Entries[ 'latency' ] || null,
+                specVersion: layer1Entries[ 'specVersion' ] || null,
+                experimentalCapabilities: layer1Entries[ 'experimentalCapabilities' ] || null,
+                taskCapabilities: layer1Entries[ 'taskCapabilities' ] || null
             },
 
             a2a: AssessmentBuilder.#buildA2aEntries( { layer2Entries } ),
@@ -188,7 +204,10 @@ class AssessmentBuilder {
             provider: {
                 organization: layer2Entries[ 'providerOrganization' ] || null,
                 url: layer2Entries[ 'providerUrl' ] || null
-            }
+            },
+            ap2Version: layer2Entries[ 'ap2Version' ] || null,
+            erc8004ServiceUrl: layer2Entries[ 'erc8004ServiceUrl' ] || null,
+            extensions: layer2Entries[ 'extensions' ] || null
         }
 
         return a2a

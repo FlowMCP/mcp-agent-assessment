@@ -159,6 +159,97 @@ describe( 'SeverityClassifier', () => {
         } )
 
 
+        test( 'classifies EVT codes as Layer 3 WARNING', () => {
+            const messages = [
+                'EVT-001 events: No AgentRegistered events found',
+                'EVT-003 events: Multiple registration events found',
+                'EVT-007 events: Event data decode failed'
+            ]
+
+            const { classified } = SeverityClassifier.classify( { messages, layer: 3 } )
+
+            expect( classified ).toHaveLength( 3 )
+
+            classified
+                .forEach( ( msg ) => {
+                    expect( msg[ 'severity' ] ).toBe( 'WARNING' )
+                } )
+
+            expect( classified[ 0 ][ 'code' ] ).toBe( 'EVT-001' )
+            expect( classified[ 1 ][ 'code' ] ).toBe( 'EVT-003' )
+            expect( classified[ 2 ][ 'code' ] ).toBe( 'EVT-007' )
+        } )
+
+
+        test( 'classifies URI codes as Layer 3 INFO or WARNING', () => {
+            const messages = [
+                'URI-001 tokenURI: Fetching token URI',
+                'URI-002 tokenURI: Token URI resolved',
+                'URI-003 tokenURI: Token URI fetch failed',
+                'URI-004 tokenURI: Data URI detected',
+                'URI-006 tokenURI: Invalid URI format',
+                'URI-009 tokenURI: Content parsing failed'
+            ]
+
+            const { classified } = SeverityClassifier.classify( { messages, layer: 3 } )
+
+            expect( classified[ 0 ][ 'code' ] ).toBe( 'URI-001' )
+            expect( classified[ 0 ][ 'severity' ] ).toBe( 'INFO' )
+            expect( classified[ 1 ][ 'code' ] ).toBe( 'URI-002' )
+            expect( classified[ 1 ][ 'severity' ] ).toBe( 'INFO' )
+            expect( classified[ 2 ][ 'code' ] ).toBe( 'URI-003' )
+            expect( classified[ 2 ][ 'severity' ] ).toBe( 'WARNING' )
+            expect( classified[ 3 ][ 'code' ] ).toBe( 'URI-004' )
+            expect( classified[ 3 ][ 'severity' ] ).toBe( 'INFO' )
+            expect( classified[ 4 ][ 'code' ] ).toBe( 'URI-006' )
+            expect( classified[ 4 ][ 'severity' ] ).toBe( 'WARNING' )
+            expect( classified[ 5 ][ 'code' ] ).toBe( 'URI-009' )
+            expect( classified[ 5 ][ 'severity' ] ).toBe( 'WARNING' )
+        } )
+
+
+        test( 'classifies new REG-0xx codes as Layer 3 WARNING', () => {
+            const messages = [
+                'REG-010 registration: Missing agentId field',
+                'REG-015 registration: Invalid chain identifier',
+                'REG-023 registration: Missing required service field',
+                'REG-031 spec: Non-compliant metadata',
+                'REG-040 registration: Optional field missing'
+            ]
+
+            const { classified } = SeverityClassifier.classify( { messages, layer: 3 } )
+
+            expect( classified[ 0 ][ 'code' ] ).toBe( 'REG-010' )
+            expect( classified[ 0 ][ 'severity' ] ).toBe( 'WARNING' )
+            expect( classified[ 1 ][ 'code' ] ).toBe( 'REG-015' )
+            expect( classified[ 1 ][ 'severity' ] ).toBe( 'WARNING' )
+            expect( classified[ 2 ][ 'code' ] ).toBe( 'REG-023' )
+            expect( classified[ 2 ][ 'severity' ] ).toBe( 'WARNING' )
+            expect( classified[ 3 ][ 'code' ] ).toBe( 'REG-031' )
+            expect( classified[ 3 ][ 'severity' ] ).toBe( 'WARNING' )
+            expect( classified[ 4 ][ 'code' ] ).toBe( 'REG-040' )
+            expect( classified[ 4 ][ 'severity' ] ).toBe( 'INFO' )
+        } )
+
+
+        test( 'classifies VAL codes as Layer 3 WARNING', () => {
+            const messages = [
+                'VAL-001 validation: Missing required field',
+                'VAL-005 validation: Invalid type',
+                'VAL-010 validation: Schema mismatch'
+            ]
+
+            const { classified } = SeverityClassifier.classify( { messages, layer: 3 } )
+
+            expect( classified ).toHaveLength( 3 )
+
+            classified
+                .forEach( ( msg ) => {
+                    expect( msg[ 'severity' ] ).toBe( 'WARNING' )
+                } )
+        } )
+
+
         test( 'defaults unknown codes to WARNING', () => {
             const messages = [
                 'XYZ-999 unknown: Some unknown error'
