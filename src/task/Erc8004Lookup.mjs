@@ -4,29 +4,25 @@ import { Erc8004RegistryParser } from 'erc8004-registry-parser'
 class Erc8004Lookup {
 
 
-    static #CONTRACTS = {
-        'ETHEREUM_MAINNET': {
-            proxy: '0x8004a169fb4a3325136eb29fa0ceb6d2e539a432',
-            implementation: '0x7274e874ca62410a93bd8bf61c69d8045e399c02'
-        },
-        'BASE_MAINNET': {
-            proxy: '0x8004a169fb4a3325136eb29fa0ceb6d2e539a432',
-            implementation: '0x7274e874ca62410a93bd8bf61c69d8045e399c02'
-        },
-        'SEPOLIA_TESTNET': {
-            proxy: '0x8004a169fb4a3325136eb29fa0ceb6d2e539a432',
-            implementation: '0x7274e874ca62410a93bd8bf61c69d8045e399c02'
-        },
-        'BASE_SEPOLIA_TESTNET': {
-            proxy: '0x8004a169fb4a3325136eb29fa0ceb6d2e539a432',
-            implementation: '0x7274e874ca62410a93bd8bf61c69d8045e399c02'
-        }
-    }
+    static #IDENTITY_REGISTRY = '0x8004a169fb4a3325136eb29fa0ceb6d2e539a432'
+    static #REPUTATION_REGISTRY = '0x8004baa17c55a88189ae136b182e5fda19de9b63'
 
 
     static #CHAIN_ID_TO_ALIAS = {
         1: 'ETHEREUM_MAINNET',
+        10: 'OPTIMISM_MAINNET',
+        56: 'BNB_MAINNET',
+        100: 'GNOSIS_MAINNET',
+        137: 'POLYGON_MAINNET',
+        143: 'MONAD_MAINNET',
+        196: 'XLAYER_MAINNET',
         8453: 'BASE_MAINNET',
+        42161: 'ARBITRUM_MAINNET',
+        42220: 'CELO_MAINNET',
+        43114: 'AVALANCHE_MAINNET',
+        59144: 'LINEA_MAINNET',
+        167000: 'TAIKO_MAINNET',
+        534352: 'SCROLL_MAINNET',
         11155111: 'SEPOLIA_TESTNET',
         84532: 'BASE_SEPOLIA_TESTNET'
     }
@@ -34,7 +30,19 @@ class Erc8004Lookup {
 
     static #CAIP2_TO_ALIAS = {
         'eip155:1': 'ETHEREUM_MAINNET',
+        'eip155:10': 'OPTIMISM_MAINNET',
+        'eip155:56': 'BNB_MAINNET',
+        'eip155:100': 'GNOSIS_MAINNET',
+        'eip155:137': 'POLYGON_MAINNET',
+        'eip155:143': 'MONAD_MAINNET',
+        'eip155:196': 'XLAYER_MAINNET',
         'eip155:8453': 'BASE_MAINNET',
+        'eip155:42161': 'ARBITRUM_MAINNET',
+        'eip155:42220': 'CELO_MAINNET',
+        'eip155:43114': 'AVALANCHE_MAINNET',
+        'eip155:59144': 'LINEA_MAINNET',
+        'eip155:167000': 'TAIKO_MAINNET',
+        'eip155:534352': 'SCROLL_MAINNET',
         'eip155:11155111': 'SEPOLIA_TESTNET',
         'eip155:84532': 'BASE_SEPOLIA_TESTNET'
     }
@@ -155,18 +163,10 @@ class Erc8004Lookup {
             return { result, messages, rpcNode: null }
         }
 
-        const contracts = Erc8004Lookup.#CONTRACTS[ alias ]
-
-        if( !contracts ) {
-            messages.push( `REG-022 chainId: No contract addresses for chain "${alias}"` )
-
-            return { result, messages, rpcNode: null }
-        }
-
         try {
             const { agentUri, owner } = await Erc8004Lookup.#queryOnChainAgent( {
                 rpcNode,
-                proxyAddress: contracts[ 'proxy' ],
+                proxyAddress: Erc8004Lookup.#IDENTITY_REGISTRY,
                 agentId,
                 timeout
             } )
@@ -227,7 +227,7 @@ class Erc8004Lookup {
         try {
             const { metadataBytes } = await Erc8004Lookup.#queryMetadata( {
                 rpcNode,
-                proxyAddress: '0x8004a169fb4a3325136eb29fa0ceb6d2e539a432',
+                proxyAddress: Erc8004Lookup.#REPUTATION_REGISTRY,
                 agentId,
                 metadataKey: 'reputation',
                 timeout
