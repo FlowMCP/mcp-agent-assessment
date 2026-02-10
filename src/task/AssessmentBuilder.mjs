@@ -59,6 +59,8 @@ class AssessmentBuilder {
             supportsTaskCancel: layer1Categories[ 'supportsTaskCancel' ] || false,
             supportsTaskAugmentedToolCall: layer1Categories[ 'supportsTaskAugmentedToolCall' ] || false,
             hasExperimentalCapabilities: layer1Categories[ 'hasExperimentalCapabilities' ] || false,
+            supportsSampling: layer1Categories[ 'supportsSampling' ] || false,
+            supportsElicitation: layer1Categories[ 'supportsElicitation' ] || false,
             specVersion: layer1Categories[ 'specVersion' ] || null,
 
             supportsOAuth: layer1Categories[ 'supportsOAuth' ] || false,
