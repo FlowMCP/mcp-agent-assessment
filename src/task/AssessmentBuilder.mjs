@@ -82,6 +82,8 @@ class AssessmentBuilder {
             supportsA2aExtendedCard: layer2Categories[ 'supportsExtendedCard' ] || false,
             hasA2aDocumentation: layer2Categories[ 'hasDocumentation' ] || false,
             supportsA2aAp2: layer2Categories[ 'supportsAp2' ] || false,
+            supportsA2aX402: layer2Categories[ 'supportsX402' ] || false,
+            supportsA2aEmbeddedFlow: layer2Categories[ 'supportsEmbeddedFlow' ] || false,
             hasA2aErc8004ServiceLink: layer2Categories[ 'hasErc8004ServiceLink' ] || false,
 
             uiSupportsMcpApps: layer5Categories[ 'supportsMcpApps' ] || false,
@@ -208,6 +210,8 @@ class AssessmentBuilder {
                 url: layer2Entries[ 'providerUrl' ] || null
             },
             ap2Version: layer2Entries[ 'ap2Version' ] || null,
+            ap2Roles: layer2Entries[ 'ap2Roles' ] || null,
+            x402Version: layer2Entries[ 'x402Version' ] || null,
             erc8004ServiceUrl: layer2Entries[ 'erc8004ServiceUrl' ] || null,
             extensions: layer2Entries[ 'extensions' ] || null
         }

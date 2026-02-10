@@ -97,6 +97,8 @@ describe( 'AssessmentBuilder', () => {
                     supportsExtendedCard: false,
                     hasDocumentation: true,
                     supportsAp2: false,
+                    supportsX402: false,
+                    supportsEmbeddedFlow: false,
                     hasErc8004ServiceLink: false
                 },
                 entries: {
@@ -111,6 +113,8 @@ describe( 'AssessmentBuilder', () => {
                     protocolBindings: [ 'jsonrpc' ],
                     protocolVersion: '1.0',
                     ap2Version: null,
+                    ap2Roles: null,
+                    x402Version: null,
                     erc8004ServiceUrl: null,
                     extensions: null,
                     timestamp: '2026-01-01T00:00:00.000Z'
@@ -215,6 +219,8 @@ describe( 'AssessmentBuilder', () => {
             expect( categories[ 'supportsA2aExtendedCard' ] ).toBe( false )
             expect( categories[ 'hasA2aDocumentation' ] ).toBe( true )
             expect( categories[ 'supportsA2aAp2' ] ).toBe( false )
+            expect( categories[ 'supportsA2aX402' ] ).toBe( false )
+            expect( categories[ 'supportsA2aEmbeddedFlow' ] ).toBe( false )
             expect( categories[ 'hasA2aErc8004ServiceLink' ] ).toBe( false )
             expect( categories[ 'supportsLogging' ] ).toBe( false )
             expect( categories[ 'supportsCompletions' ] ).toBe( false )
@@ -249,6 +255,8 @@ describe( 'AssessmentBuilder', () => {
             expect( entries[ 'mcp' ][ 'taskCapabilities' ] ).toBe( null )
             expect( entries[ 'a2a' ][ 'agentName' ] ).toBe( 'TestAgent' )
             expect( entries[ 'a2a' ][ 'ap2Version' ] ).toBe( null )
+            expect( entries[ 'a2a' ][ 'ap2Roles' ] ).toBe( null )
+            expect( entries[ 'a2a' ][ 'x402Version' ] ).toBe( null )
             expect( entries[ 'a2a' ][ 'erc8004ServiceUrl' ] ).toBe( null )
             expect( entries[ 'a2a' ][ 'extensions' ] ).toBe( null )
             expect( entries[ 'ui' ][ 'extensionVersion' ] ).toBe( '2026-01-26' )
@@ -444,6 +452,8 @@ describe( 'AssessmentBuilder', () => {
                     supportsExtendedCard: false,
                     hasDocumentation: false,
                     supportsAp2: true,
+                    supportsX402: true,
+                    supportsEmbeddedFlow: true,
                     hasErc8004ServiceLink: true
                 },
                 entries: {
@@ -457,6 +467,8 @@ describe( 'AssessmentBuilder', () => {
                     protocolBindings: [],
                     protocolVersion: '1.0',
                     ap2Version: '0.2.0',
+                    ap2Roles: [ 'merchant' ],
+                    x402Version: '0.1',
                     erc8004ServiceUrl: 'https://registry.example.com',
                     extensions: { 'x-custom': true }
                 }
@@ -473,8 +485,12 @@ describe( 'AssessmentBuilder', () => {
             } )
 
             expect( categories[ 'supportsA2aAp2' ] ).toBe( true )
+            expect( categories[ 'supportsA2aX402' ] ).toBe( true )
+            expect( categories[ 'supportsA2aEmbeddedFlow' ] ).toBe( true )
             expect( categories[ 'hasA2aErc8004ServiceLink' ] ).toBe( true )
             expect( entries[ 'a2a' ][ 'ap2Version' ] ).toBe( '0.2.0' )
+            expect( entries[ 'a2a' ][ 'ap2Roles' ] ).toEqual( [ 'merchant' ] )
+            expect( entries[ 'a2a' ][ 'x402Version' ] ).toBe( '0.1' )
             expect( entries[ 'a2a' ][ 'erc8004ServiceUrl' ] ).toBe( 'https://registry.example.com' )
             expect( entries[ 'a2a' ][ 'extensions' ] ).toEqual( { 'x-custom': true } )
         } )
@@ -536,6 +552,8 @@ describe( 'AssessmentBuilder', () => {
                     protocolBindings: [ 'jsonrpc' ],
                     protocolVersion: '1.0',
                     ap2Version: '0.2.0',
+                    ap2Roles: [ 'merchant', 'shopper' ],
+                    x402Version: '0.1',
                     erc8004ServiceUrl: 'https://registry.example.com/.well-known/agent-registration.json',
                     extensions: { 'x-payment': { enabled: true } }
                 }
@@ -552,6 +570,8 @@ describe( 'AssessmentBuilder', () => {
             } )
 
             expect( entries[ 'a2a' ][ 'ap2Version' ] ).toBe( '0.2.0' )
+            expect( entries[ 'a2a' ][ 'ap2Roles' ] ).toEqual( [ 'merchant', 'shopper' ] )
+            expect( entries[ 'a2a' ][ 'x402Version' ] ).toBe( '0.1' )
             expect( entries[ 'a2a' ][ 'erc8004ServiceUrl' ] ).toBe( 'https://registry.example.com/.well-known/agent-registration.json' )
             expect( entries[ 'a2a' ][ 'extensions' ] ).toEqual( { 'x-payment': { enabled: true } } )
         } )
