@@ -20,10 +20,10 @@
     ],
     "license": "MIT",
     "dependencies": {
-        "a2a-agent-validator": "github:FlowMCP/a2a-agent-validator#eefae69",
-        "erc8004-registry-parser": "github:FlowMCP/erc8004-registry-parser#main",
+        "a2a-agent-validator": "github:FlowMCP/a2a-agent-validator#dafa182",
+        "erc8004-registry-parser": "github:FlowMCP/erc8004-registry-parser#b3fd851",
         "mcp-apps-validator": "github:FlowMCP/mcp-apps-validator#df6009a",
-        "x402-mcp-validator": "github:FlowMCP/x402-mcp-validator#cf074bd"
+        "x402-mcp-validator": "github:FlowMCP/x402-mcp-validator#cedb5f4"
     },
     "devDependencies": {
         "jest": "^30.0.5"
