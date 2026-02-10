@@ -4,6 +4,7 @@ import { McpAppsValidator } from 'mcp-apps-validator'
 
 import { AssessmentBuilder } from './AssessmentBuilder.mjs'
 import { Erc8004Lookup } from './Erc8004Lookup.mjs'
+import { HttpPreCheck } from './HttpPreCheck.mjs'
 import { SeverityClassifier } from './SeverityClassifier.mjs'
 
 
@@ -13,6 +14,8 @@ class AssessmentPipeline {
     static async run( { endpoint, timeout, erc8004 } ) {
         const origin = new URL( endpoint ).origin
 
+        const layer0Result = await AssessmentPipeline.#runLayer0( { endpoint, timeout } )
+
         const { layer1Result, layer2Result, layer3Result, layer4Result, layer5Result } = await AssessmentPipeline.#executeLayers( {
             endpoint,
             origin,
@@ -20,6 +23,7 @@ class AssessmentPipeline {
             erc8004
         } )
 
+        const layer0Messages = ( layer0Result && layer0Result[ 'messages' ] ) || []
         const layer1Messages = ( layer1Result && layer1Result[ 'messages' ] ) || []
         const layer2Messages = ( layer2Result && layer2Result[ 'messages' ] ) || []
         const layer3Messages = AssessmentPipeline.#extractLayer3Messages( { layer3Result } )
@@ -27,6 +31,7 @@ class AssessmentPipeline {
         const layer5Messages = ( layer5Result && layer5Result[ 'messages' ] ) || []
 
         const { classified } = SeverityClassifier.classifyAll( {
+            layer0Messages,
             layer1Messages,
             layer2Messages,
             layer3Messages,
@@ -37,6 +42,7 @@ class AssessmentPipeline {
         const { status, categories, entries } = AssessmentBuilder.build( {
             endpoint,
             classifiedMessages: classified,
+            layer0Result,
             layer1Result,
             layer2Result,
             layer3Result,
@@ -45,6 +51,7 @@ class AssessmentPipeline {
         } )
 
         const layers = {
+            http: layer0Result,
             mcp: layer1Result,
             a2a: layer2Result,
             erc8004: layer3Result,
@@ -53,6 +60,23 @@ class AssessmentPipeline {
         }
 
         return { status, messages: classified, categories, entries, layers }
+    }
+
+
+    static async #runLayer0( { endpoint, timeout } ) {
+        try {
+            const result = await HttpPreCheck.check( { endpoint, timeout } )
+
+            return result
+        } catch( error ) {
+            const message = error && error.message ? error.message : 'Unknown error'
+
+            return {
+                messages: [ `HTTP-002 connection: ${message}` ],
+                categories: {},
+                entries: {}
+            }
+        }
     }
 
 

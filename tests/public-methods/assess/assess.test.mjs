@@ -6,6 +6,13 @@ import { TEST_ENDPOINT, TEST_ORIGIN, TEST_TIMEOUT, TEST_ERC8004_CONFIG } from '.
 const mockMcpStart = jest.fn()
 const mockA2aStart = jest.fn()
 const mockUiStart = jest.fn()
+const mockHttpPreCheckCheck = jest.fn()
+
+jest.unstable_mockModule( '../../../src/task/HttpPreCheck.mjs', () => ( {
+    HttpPreCheck: {
+        check: mockHttpPreCheckCheck
+    }
+} ) )
 
 jest.unstable_mockModule( 'x402-mcp-validator', () => ( {
     McpServerValidator: {
@@ -285,6 +292,35 @@ const MOCK_UI_NOT_FOUND = {
     }
 }
 
+const MOCK_HTTP_PRECHECK_RESULT = {
+    messages: [],
+    categories: {
+        isHttpReachable: true,
+        isHttps: true,
+        hasValidSsl: true,
+        hasSslCertificate: true,
+        hasRedirects: false,
+        isWebsite: false,
+        isApiEndpoint: true,
+        hasServerHeader: true,
+        supportsCors: false,
+        supportsHttp2: true
+    },
+    entries: {
+        protocol: 'https',
+        statusCode: 200,
+        redirectCount: 0,
+        redirectChain: [],
+        contentType: 'application/json',
+        serverHeader: 'nginx',
+        responseTimeMs: 50,
+        sslProtocol: 'TLSv1.3',
+        sslIssuer: 'Let\'s Encrypt',
+        sslExpiresAt: '2027-01-01T00:00:00.000Z',
+        ipAddress: '93.184.216.34'
+    }
+}
+
 
 describe( 'McpAgentAssessment.assess', () => {
 
@@ -296,6 +332,8 @@ describe( 'McpAgentAssessment.assess', () => {
         mockMcpStart.mockReset()
         mockA2aStart.mockReset()
         mockUiStart.mockReset()
+        mockHttpPreCheckCheck.mockReset()
+        mockHttpPreCheckCheck.mockResolvedValue( MOCK_HTTP_PRECHECK_RESULT )
         mockUiStart.mockResolvedValue( MOCK_UI_RESULT )
     } )
 

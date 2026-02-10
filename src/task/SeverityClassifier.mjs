@@ -1,6 +1,23 @@
 class SeverityClassifier {
 
 
+    static #LAYER_0_SEVERITY = {
+        'HTTP-001': 'ERROR',
+        'HTTP-002': 'ERROR',
+        'HTTP-003': 'ERROR',
+        'HTTP-004': 'WARNING',
+        'HTTP-005': 'WARNING',
+        'HTTP-006': 'WARNING',
+        'HTTP-007': 'INFO',
+        'HTTP-008': 'WARNING',
+        'HTTP-009': 'INFO',
+        'HTTP-010': 'INFO',
+        'HTTP-011': 'INFO',
+        'HTTP-012': 'INFO',
+        'HTTP-013': 'INFO'
+    }
+
+
     static #LAYER_1_SEVERITY = {
         'CON-001': 'ERROR',
         'CON-002': 'ERROR',
@@ -206,8 +223,13 @@ class SeverityClassifier {
     }
 
 
-    static classifyAll( { layer1Messages, layer2Messages, layer3Messages, layer4Messages, layer5Messages } ) {
+    static classifyAll( { layer0Messages, layer1Messages, layer2Messages, layer3Messages, layer4Messages, layer5Messages } ) {
         const allClassified = []
+
+        if( layer0Messages && layer0Messages.length > 0 ) {
+            const { classified } = SeverityClassifier.classify( { messages: layer0Messages, layer: 0 } )
+            allClassified.push( ...classified )
+        }
 
         if( layer1Messages && layer1Messages.length > 0 ) {
             const { classified } = SeverityClassifier.classify( { messages: layer1Messages, layer: 1 } )
@@ -288,6 +310,7 @@ class SeverityClassifier {
 
     static #getLayerMap( { layer } ) {
         const maps = {
+            0: SeverityClassifier.#LAYER_0_SEVERITY,
             1: SeverityClassifier.#LAYER_1_SEVERITY,
             2: SeverityClassifier.#LAYER_2_SEVERITY,
             3: SeverityClassifier.#LAYER_3_SEVERITY,

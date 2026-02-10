@@ -195,6 +195,7 @@ describe( 'AssessmentBuilder', () => {
             const { status, categories, entries } = AssessmentBuilder.build( {
                 endpoint: TEST_ENDPOINT,
                 classifiedMessages,
+                layer0Result: null,
                 layer1Result,
                 layer2Result,
                 layer3Result,

@@ -5,6 +5,33 @@ describe( 'SeverityClassifier', () => {
 
     describe( 'classify', () => {
 
+        test( 'classifies Layer 0 HTTP codes correctly', () => {
+            const messages = [
+                'HTTP-001 dns: DNS resolution failed for example.com',
+                'HTTP-002 connection: Connection refused',
+                'HTTP-003 connection: Connection timeout',
+                'HTTP-004 protocol: HTTP instead of HTTPS',
+                'HTTP-005 ssl: SSL certificate expired',
+                'HTTP-007 redirect: 2 redirect(s) detected',
+                'HTTP-009 content: Website detected (HTML response)',
+                'HTTP-013 http2: HTTP/2 supported'
+            ]
+
+            const { classified } = SeverityClassifier.classify( { messages, layer: 0 } )
+
+            expect( classified ).toHaveLength( 8 )
+            expect( classified[ 0 ][ 'severity' ] ).toBe( 'ERROR' )
+            expect( classified[ 0 ][ 'code' ] ).toBe( 'HTTP-001' )
+            expect( classified[ 1 ][ 'severity' ] ).toBe( 'ERROR' )
+            expect( classified[ 2 ][ 'severity' ] ).toBe( 'ERROR' )
+            expect( classified[ 3 ][ 'severity' ] ).toBe( 'WARNING' )
+            expect( classified[ 4 ][ 'severity' ] ).toBe( 'WARNING' )
+            expect( classified[ 5 ][ 'severity' ] ).toBe( 'INFO' )
+            expect( classified[ 6 ][ 'severity' ] ).toBe( 'INFO' )
+            expect( classified[ 7 ][ 'severity' ] ).toBe( 'INFO' )
+        } )
+
+
         test( 'classifies Layer 1 ERROR codes correctly', () => {
             const messages = [
                 'CON-001 endpoint: Server is not reachable',
@@ -309,6 +336,7 @@ describe( 'SeverityClassifier', () => {
 
         test( 'classifies messages from all layers', () => {
             const { classified } = SeverityClassifier.classifyAll( {
+                layer0Messages: [ 'HTTP-004 protocol: HTTP instead of HTTPS' ],
                 layer1Messages: [ 'CON-001 endpoint: Server not reachable' ],
                 layer2Messages: [ 'CSV-020: Missing field' ],
                 layer3Messages: [ 'REG-001 well-known: Not found' ],
@@ -316,17 +344,21 @@ describe( 'SeverityClassifier', () => {
                 layer5Messages: [ 'UIV-020 ui://dashboard: No CSP' ]
             } )
 
-            expect( classified ).toHaveLength( 5 )
-            expect( classified[ 0 ][ 'layer' ] ).toBe( 1 )
-            expect( classified[ 1 ][ 'layer' ] ).toBe( 2 )
-            expect( classified[ 2 ][ 'layer' ] ).toBe( 3 )
-            expect( classified[ 3 ][ 'layer' ] ).toBe( 4 )
-            expect( classified[ 4 ][ 'layer' ] ).toBe( 5 )
+            expect( classified ).toHaveLength( 6 )
+            expect( classified[ 0 ][ 'layer' ] ).toBe( 0 )
+            expect( classified[ 0 ][ 'code' ] ).toBe( 'HTTP-004' )
+            expect( classified[ 0 ][ 'severity' ] ).toBe( 'WARNING' )
+            expect( classified[ 1 ][ 'layer' ] ).toBe( 1 )
+            expect( classified[ 2 ][ 'layer' ] ).toBe( 2 )
+            expect( classified[ 3 ][ 'layer' ] ).toBe( 3 )
+            expect( classified[ 4 ][ 'layer' ] ).toBe( 4 )
+            expect( classified[ 5 ][ 'layer' ] ).toBe( 5 )
         } )
 
 
         test( 'handles missing layer messages gracefully', () => {
             const { classified } = SeverityClassifier.classifyAll( {
+                layer0Messages: null,
                 layer1Messages: [ 'CON-001 endpoint: Not reachable' ],
                 layer2Messages: null,
                 layer3Messages: undefined,
@@ -341,6 +373,7 @@ describe( 'SeverityClassifier', () => {
 
         test( 'returns empty array when all layers empty', () => {
             const { classified } = SeverityClassifier.classifyAll( {
+                layer0Messages: [],
                 layer1Messages: [],
                 layer2Messages: [],
                 layer3Messages: [],

@@ -1,8 +1,9 @@
 class AssessmentBuilder {
 
 
-    static build( { endpoint, classifiedMessages, layer1Result, layer2Result, layer3Result, layer4Result, layer5Result } ) {
+    static build( { endpoint, classifiedMessages, layer0Result, layer1Result, layer2Result, layer3Result, layer4Result, layer5Result } ) {
         const { categories } = AssessmentBuilder.#buildCategories( {
+            layer0Result,
             layer1Result,
             layer2Result,
             layer3Result,
@@ -13,6 +14,7 @@ class AssessmentBuilder {
 
         const { entries } = AssessmentBuilder.#buildEntries( {
             endpoint,
+            layer0Result,
             layer1Result,
             layer2Result,
             layer3Result,
@@ -31,12 +33,24 @@ class AssessmentBuilder {
     }
 
 
-    static #buildCategories( { layer1Result, layer2Result, layer3Result, layer4Result, layer5Result, classifiedMessages } ) {
+    static #buildCategories( { layer0Result, layer1Result, layer2Result, layer3Result, layer4Result, layer5Result, classifiedMessages } ) {
+        const layer0Categories = ( layer0Result && layer0Result[ 'categories' ] ) || {}
         const layer1Categories = ( layer1Result && layer1Result[ 'categories' ] ) || {}
         const layer2Categories = ( layer2Result && layer2Result[ 'categories' ] ) || {}
         const layer5Categories = ( layer5Result && layer5Result[ 'categories' ] ) || {}
 
         const categories = {
+            isHttpReachable: layer0Categories[ 'isHttpReachable' ] || false,
+            isHttps: layer0Categories[ 'isHttps' ] || false,
+            hasValidSsl: layer0Categories[ 'hasValidSsl' ] || false,
+            hasSslCertificate: layer0Categories[ 'hasSslCertificate' ] || false,
+            hasRedirects: layer0Categories[ 'hasRedirects' ] || false,
+            isWebsite: layer0Categories[ 'isWebsite' ] || false,
+            isApiEndpoint: layer0Categories[ 'isApiEndpoint' ] || false,
+            hasServerHeader: layer0Categories[ 'hasServerHeader' ] || false,
+            supportsCors: layer0Categories[ 'supportsCors' ] || false,
+            supportsHttp2: layer0Categories[ 'supportsHttp2' ] || false,
+
             isReachable: layer1Categories[ 'isReachable' ] || false,
             supportsMcp: layer1Categories[ 'supportsMcp' ] || false,
             hasTools: layer1Categories[ 'hasTools' ] || false,
@@ -140,7 +154,7 @@ class AssessmentBuilder {
     }
 
 
-    static #buildEntries( { endpoint, layer1Result, layer2Result, layer3Result, layer4Result, layer5Result, classifiedMessages } ) {
+    static #buildEntries( { endpoint, layer0Result, layer1Result, layer2Result, layer3Result, layer4Result, layer5Result, classifiedMessages } ) {
         const layer1Entries = ( layer1Result && layer1Result[ 'entries' ] ) || {}
         const layer2Entries = ( layer2Result && layer2Result[ 'entries' ] ) || {}
 
@@ -150,6 +164,8 @@ class AssessmentBuilder {
         const entries = {
             endpoint,
             timestamp: new Date().toISOString(),
+
+            http: AssessmentBuilder.#buildHttpEntries( { layer0Result } ),
 
             mcp: {
                 serverName: layer1Entries[ 'serverName' ] || null,
@@ -189,6 +205,31 @@ class AssessmentBuilder {
         }
 
         return { entries }
+    }
+
+
+    static #buildHttpEntries( { layer0Result } ) {
+        if( !layer0Result || !layer0Result[ 'entries' ] ) {
+            return null
+        }
+
+        const layer0Entries = layer0Result[ 'entries' ]
+
+        const http = {
+            protocol: layer0Entries[ 'protocol' ] || null,
+            statusCode: layer0Entries[ 'statusCode' ] || null,
+            redirectCount: layer0Entries[ 'redirectCount' ] || 0,
+            redirectChain: layer0Entries[ 'redirectChain' ] || [],
+            contentType: layer0Entries[ 'contentType' ] || null,
+            serverHeader: layer0Entries[ 'serverHeader' ] || null,
+            responseTimeMs: layer0Entries[ 'responseTimeMs' ] || null,
+            sslProtocol: layer0Entries[ 'sslProtocol' ] || null,
+            sslIssuer: layer0Entries[ 'sslIssuer' ] || null,
+            sslExpiresAt: layer0Entries[ 'sslExpiresAt' ] || null,
+            ipAddress: layer0Entries[ 'ipAddress' ] || null
+        }
+
+        return http
     }
 
 
