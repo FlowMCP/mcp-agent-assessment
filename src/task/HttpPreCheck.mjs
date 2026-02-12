@@ -269,7 +269,8 @@ class HttpPreCheck {
             redirect: 'manual',
             signal: controller.signal,
             headers: {
-                'User-Agent': 'MCP-Agent-Assessment/1.0'
+                'User-Agent': 'MCP-Agent-Assessment/1.0',
+                'Accept': 'text/html, application/xhtml+xml, */*'
             }
         } )
 
